@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 
 function ProductList({ search, onViewDetail }) {
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState('')
   const [loading, setLoading] = useState(true)
 
   // Hàm xử lý đường dẫn ảnh
@@ -15,6 +17,7 @@ function ProductList({ search, onViewDetail }) {
   }
 
   useEffect(() => {
+    // Load products
     fetch('http://localhost:5000/api/products')
       .then(res => res.json())
       .then(data => {
@@ -22,13 +25,26 @@ function ProductList({ search, onViewDetail }) {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+    
+    // Load categories
+    fetch('http://localhost:5000/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        setCategories(data.filter(cat => cat.isActive))
+      })
+      .catch(() => {})
   }, [])
 
-  const filtered = search
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase())
-      )
-    : products
+  const filtered = products.filter(p => {
+    // Filter by search
+    const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
+    
+    // Filter by category
+    const matchesCategory = !selectedCategory || 
+      (p.category && (p.category._id === selectedCategory || p.category === selectedCategory))
+    
+    return matchesSearch && matchesCategory
+  })
 
   if (loading) return <p>Đang tải danh sách sản phẩm...</p>
   if (!filtered.length) return <p>Không có sản phẩm nào.</p>
@@ -59,6 +75,101 @@ function ProductList({ search, onViewDetail }) {
         }}>
           Khám phá những sản phẩm công nghệ tuyệt vời
         </p>
+      </div>
+
+      {/* Filter Section */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '24px',
+        gap: '16px',
+        flexWrap: 'wrap'
+      }}>
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '16px',
+          padding: '12px 20px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <span style={{
+            fontSize: '14px',
+            fontWeight: '600',
+            color: '#374151',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            🏷️ Danh mục:
+          </span>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '12px',
+              border: '2px solid #e5e7eb',
+              background: '#fff',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#374151',
+              cursor: 'pointer',
+              outline: 'none',
+              transition: 'all 0.3s ease',
+              minWidth: '180px'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#667eea'
+              e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#e5e7eb'
+              e.target.style.boxShadow = 'none'
+            }}
+          >
+            <option value="">Tất cả danh mục</option>
+            {categories.map(category => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {selectedCategory && (
+          <button
+            onClick={() => setSelectedCategory('')}
+            style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-1px)'
+              e.target.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)'
+              e.target.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.3)'
+            }}
+          >
+            ✕ Xóa bộ lọc
+          </button>
+        )}
       </div>
 
       <div style={{
@@ -163,6 +274,27 @@ function ProductList({ search, onViewDetail }) {
               }}>
                 {p.name}
               </h3>
+
+              {/* Category Badge */}
+              {p.category && (
+                <div style={{
+                  marginBottom: '8px'
+                }}>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: '#fff',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {p.category.name || p.category}
+                  </span>
+                </div>
+              )}
 
               <div style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

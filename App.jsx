@@ -6,6 +6,7 @@ import BannerCarousel from './BannerCarousel'
 import AdminDashboard from './AdminDashboard'
 import CartPage from './CartPage'
 import CheckoutPage from './CheckoutPage'
+import WishlistPage from './WishlistPage'
 
 // Styles constants
 const styles = {
@@ -150,6 +151,7 @@ function App() {
   const [selectedProductId, setSelectedProductId] = useState(null)
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
+  const [showWishlist, setShowWishlist] = useState(false)
   const [cart, setCart] = useState(() => {
     // Load cart from localStorage on initialization
     try {
@@ -274,6 +276,10 @@ function App() {
     setShowCheckout(false)
   }, [])
 
+  const handleBackFromWishlist = useCallback(() => {
+    setShowWishlist(false)
+  }, [])
+
   const handleClearCart = useCallback(() => {
     const confirmClear = window.confirm('Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?')
     if (confirmClear) {
@@ -287,6 +293,7 @@ function App() {
     setShowProductDetail(false)
     setShowCart(false)
     setShowCheckout(false)
+    setShowWishlist(false)
     setSelectedProductId(null)
   }, [])
 
@@ -371,6 +378,16 @@ function App() {
           )}
         </ButtonWithHover>
         
+        {user && (
+          <ButtonWithHover 
+            onClick={() => setShowWishlist(true)}
+            style={styles.navButton}
+            title="Danh sách yêu thích"
+          >
+            ❤️
+          </ButtonWithHover>
+        )}
+        
         {showProfileBtn && user && (
           <ButtonWithHover 
             onClick={() => setShowProfile(true)} 
@@ -411,6 +428,12 @@ function App() {
           onClearCart={handleClearCart}
           onGoToCheckout={handleGoToCheckout}
         />
+      ) : showWishlist ? (
+        <WishlistPage 
+          user={user}
+          onViewDetail={handleViewProductDetail}
+          onBack={handleBackFromWishlist}
+        />
       ) : showProductDetail ? (
         <ProductDetail 
           productId={selectedProductId} 
@@ -422,12 +445,13 @@ function App() {
       )}
     </div>
   ), [
-    showCheckout, showCart, showProductDetail, 
+    showCheckout, showCart, showWishlist, showProductDetail, 
     cart, user, selectedProductId, search,
     handleBackFromCheckout, handleClearCart,
     handleRemoveFromCart, handleUpdateQuantity,
     handleBackFromCart, handleGoToCheckout,
-    handleBackToList, handleAddToCart, handleViewProductDetail
+    handleBackFromWishlist, handleBackToList, 
+    handleAddToCart, handleViewProductDetail
   ])
 
   // Profile popup component
