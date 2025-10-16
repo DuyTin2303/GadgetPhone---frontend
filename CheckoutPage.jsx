@@ -93,7 +93,10 @@ const styles = {
     fontSize: '16px',
     transition: 'all 0.3s ease',
     outline: 'none',
-    resize: 'vertical'
+    resize: 'vertical',
+    minHeight: '80px',
+    lineHeight: '1.5',
+    fontFamily: 'inherit'
   },
   paymentOption: {
     display: 'flex',
@@ -259,11 +262,12 @@ function CheckoutPage({ cart, user, onBack, onClearCart }) {
     }
 
     // Simulate payment processing
+    const notesText = formData.notes ? `\nGhi chú: ${formData.notes}` : ''
     const confirmPayment = window.confirm(
       `Xác nhận thanh toán?\n\n` +
       `Tổng tiền: ${formatPrice(total)}\n` +
-      `Phương thức: ${formData.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản'}\n\n` +
-      `Thông tin sẽ được gửi đến email: ${formData.email}`
+      `Phương thức: ${formData.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản'}\n` +
+      `Thông tin sẽ được gửi đến email: ${formData.email}${notesText}`
     )
 
     if (confirmPayment) {
@@ -327,28 +331,6 @@ function CheckoutPage({ cart, user, onBack, onClearCart }) {
     </div>
   )
 
-  // Component cho textarea
-  const TextAreaField = ({ label, name, value, onChange, rows = 3, ...props }) => (
-    <div>
-      <label style={styles.label}>{label}</label>
-      <textarea 
-        name={name}
-        value={value}
-        onChange={onChange}
-        rows={rows}
-        style={styles.textarea}
-        onFocus={(e) => {
-          e.target.style.borderColor = '#667eea'
-          e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = '#e5e7eb'
-          e.target.style.boxShadow = 'none'
-        }}
-        {...props}
-      />
-    </div>
-  )
 
   // Component cho payment option
   const PaymentOption = ({ value, checked, onChange, icon, title, description }) => (
@@ -470,13 +452,36 @@ function CheckoutPage({ cart, user, onBack, onClearCart }) {
                 />
               </div>
 
-              <TextAreaField
-                label="Ghi chú (tùy chọn)"
-                name="notes"
-                value={formData.notes}
-                onChange={handleInputChange}
-                rows={3}
-              />
+              {/* Ghi chú */}
+              <div style={{ marginTop: '16px' }}>
+                <label style={styles.label}>Ghi chú (tùy chọn)</label>
+                <textarea 
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  rows={3}
+                  style={styles.textarea}
+                  placeholder="Nhập ghi chú của bạn..."
+                  maxLength={500}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#667eea'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e5e7eb'
+                    e.target.style.boxShadow = 'none'
+                  }}
+                />
+                <div style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px',
+                  textAlign: 'right'
+                }}>
+                  {formData.notes.length}/500 ký tự
+                </div>
+              </div>
+
             </div>
 
             {/* Payment Method */}

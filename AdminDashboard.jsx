@@ -45,18 +45,6 @@ function AdminDashboard({ onLogout }) {
   const [addUserError, setAddUserError] = useState('');
   const [isAddingUser, setIsAddingUser] = useState(false);
   
-  // State sửa người dùng
-  const [showEditUserForm, setShowEditUserForm] = useState(false);
-  const [editUser, setEditUser] = useState({
-    username: '',
-    email: '',
-    address: '',
-    phone: '',
-    role: 'customer'
-  });
-  const [editUserError, setEditUserError] = useState('');
-  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
-  const [editUserId, setEditUserId] = useState(null);
 
   // State thêm sản phẩm
   const [showAddForm, setShowAddForm] = useState(false);
@@ -95,62 +83,6 @@ function AdminDashboard({ onLogout }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [editProductId, setEditProductId] = useState(null);
 
-  // Sửa người dùng
-  const handleEditUser = (user) => {
-    setEditUserId(user._id);
-    setEditUser({
-      username: user.username || '',
-      email: user.email || '',
-      address: user.address || '',
-      phone: user.phone || '',
-      role: user.role || 'customer'
-    });
-    setEditUserError('');
-    setShowEditUserForm(true);
-  };
-
-  // Cập nhật người dùng
-  const handleUpdateUser = async (e) => {
-    e.preventDefault();
-    setEditUserError('');
-    setIsUpdatingUser(true);
-    
-    if (!editUser.username || !editUser.email) {
-      setEditUserError('Tên đăng nhập và email là bắt buộc!');
-      setIsUpdatingUser(false);
-      return;
-    }
-    
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/users/${editUserId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(editUser)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Lỗi không xác định');
-      
-      setUsers(prev => prev.map(u => u._id === editUserId ? data : u));
-      setShowEditUserForm(false);
-      setEditUser({
-        username: '',
-        email: '',
-        address: '',
-        phone: '',
-        role: 'customer'
-      });
-      setEditUserError('');
-      setEditUserId(null);
-    } catch (err) {
-      setEditUserError(err.message);
-    } finally {
-      setIsUpdatingUser(false);
-    }
-  };
 
   // Xóa người dùng
   const handleDeleteUser = async (id) => {
@@ -584,36 +516,36 @@ function AdminDashboard({ onLogout }) {
       case 'products':
         return (
           <div>
-            {/* Action Bar */}
+            {/* Action Bar - Đơn giản */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '24px',
-              padding: '16px 0',
-              borderBottom: '1px solid #e9ecef'
+              marginBottom: '20px',
+              padding: '12px 0',
+              borderBottom: '1px solid #e5e7eb'
             }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px'
+                gap: '12px'
               }}>
-                <h3 style={{ margin: 0, color: '#495057', fontSize: '18px', fontWeight: '600' }}>
-                  Danh sách sản phẩm ({filteredProducts.length}{filteredProducts.length !== products.length ? ` / ${products.length}` : ''})
+                <h3 style={{ margin: 0, color: '#374151', fontSize: '16px', fontWeight: '600' }}>
+                  📦 Danh sách sản phẩm ({filteredProducts.length}{filteredProducts.length !== products.length ? ` / ${products.length}` : ''})
                 </h3>
                 {loading && (
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    color: '#6c757d',
-                    fontSize: '14px'
+                    gap: '6px',
+                    color: '#6b7280',
+                    fontSize: '12px'
                   }}>
                     <div style={{
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid #e9ecef',
-                      borderTop: '2px solid #007bff',
+                      width: '12px',
+                      height: '12px',
+                      border: '2px solid #e5e7eb',
+                      borderTop: '2px solid #667eea',
                       borderRadius: '50%',
                       animation: 'spin 1s linear infinite'
                     }}></div>
@@ -622,17 +554,17 @@ function AdminDashboard({ onLogout }) {
                 )}
               </div>
               
-              {/* Search Input */}
+              {/* Search Input - Đơn giản */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
+                gap: '8px',
                 flex: 1,
                 justifyContent: 'center',
-                maxWidth: '600px'
+                maxWidth: '500px'
               }}>
                 {/* Search by name */}
-                <div style={{ position: 'relative', flex: 1, maxWidth: '250px' }}>
+                <div style={{ position: 'relative', flex: 1, maxWidth: '200px' }}>
                   <input
                     type="text"
                     placeholder="Tìm theo tên..."
@@ -640,36 +572,27 @@ function AdminDashboard({ onLogout }) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '10px 16px 10px 40px',
-                      border: '2px solid #e9ecef',
-                      borderRadius: '8px',
+                      padding: '8px 12px 8px 32px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
                       fontSize: '14px',
-                      boxSizing: 'border-box',
-                      transition: 'border-color 0.2s ease',
-                      fontFamily: 'inherit'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#007bff';
-                      e.target.style.outline = 'none';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e9ecef';
+                      boxSizing: 'border-box'
                     }}
                   />
                   <div style={{
                     position: 'absolute',
-                    left: '12px',
+                    left: '8px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#6c757d',
-                    fontSize: '16px'
+                    color: '#6b7280',
+                    fontSize: '14px'
                   }}>
                     🔍
                   </div>
                 </div>
                 
                 {/* Search by quantity */}
-                <div style={{ position: 'relative', maxWidth: '150px' }}>
+                <div style={{ position: 'relative', maxWidth: '120px' }}>
                   <input
                     type="number"
                     placeholder="Số lượng"
@@ -683,29 +606,20 @@ function AdminDashboard({ onLogout }) {
                     }}
                     style={{
                       width: '100%',
-                      padding: '10px 16px 10px 40px',
-                      border: '2px solid #e9ecef',
-                      borderRadius: '8px',
+                      padding: '8px 12px 8px 32px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
                       fontSize: '14px',
-                      boxSizing: 'border-box',
-                      transition: 'border-color 0.2s ease',
-                      fontFamily: 'inherit'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#007bff';
-                      e.target.style.outline = 'none';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e9ecef';
+                      boxSizing: 'border-box'
                     }}
                   />
                   <div style={{
                     position: 'absolute',
-                    left: '12px',
+                    left: '8px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: '#6c757d',
-                    fontSize: '16px'
+                    color: '#6b7280',
+                    fontSize: '14px'
                   }}>
                     📦
                   </div>
@@ -719,21 +633,14 @@ function AdminDashboard({ onLogout }) {
                       setQuantitySearch('');
                     }}
                     style={{
-                      background: '#6c757d',
+                      background: '#6b7280',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '8px',
-                      padding: '10px 12px',
-                      fontSize: '14px',
+                      borderRadius: '6px',
+                      padding: '8px 10px',
+                      fontSize: '12px',
                       fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = '#5a6268';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = '#6c757d';
+                      cursor: 'pointer'
                     }}
                   >
                     ✕
@@ -744,68 +651,45 @@ function AdminDashboard({ onLogout }) {
               <button 
                 onClick={() => setShowAddForm(f => !f)}
                 style={{
-                  background: showAddForm ? '#dc3545' : '#28a745',
+                  background: showAddForm ? '#ef4444' : '#10b981',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 24px',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
                   fontSize: '14px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
+                  gap: '6px'
                 }}
               >
-                {showAddForm ? (
-                  <>
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
-                    </svg>
-                    Đóng
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"/>
-                    </svg>
-                    Thêm sản phẩm mới
-                  </>
-                )}
+                {showAddForm ? '✕ Đóng' : '➕ Thêm sản phẩm'}
               </button>
             </div>
 
-            {/* Add Product Form */}
+            {/* Add Product Form - Đơn giản */}
             {showAddForm && (
               <div style={{
-                background: '#f8f9fa',
-                padding: '24px',
+                background: '#f9fafb',
+                padding: '16px',
                 borderRadius: '8px',
-                marginBottom: '24px',
-                border: '1px solid #e9ecef'
+                marginBottom: '20px',
+                border: '1px solid #e5e7eb'
               }}>
-                <h4 style={{ margin: '0 0 16px 0', color: '#495057' }}>Thêm sản phẩm mới</h4>
+                <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '16px' }}>➕ Thêm sản phẩm mới</h4>
                 <form onSubmit={handleAddProduct}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Tên sản phẩm *</label>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Tên sản phẩm *</label>
                       <input
                         type="text"
                         value={newProduct.name}
                         onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
                         style={{
                           width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
                           borderRadius: '4px',
                           fontSize: '14px'
                         }}
@@ -813,15 +697,15 @@ function AdminDashboard({ onLogout }) {
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Giá *</label>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Giá *</label>
                       <input
                         type="number"
                         value={newProduct.price}
                         onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
                         style={{
                           width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
                           borderRadius: '4px',
                           fontSize: '14px'
                         }}
@@ -829,14 +713,14 @@ function AdminDashboard({ onLogout }) {
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Danh mục *</label>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Danh mục *</label>
                       <select
                         value={newProduct.category}
                         onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
                         style={{
                           width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
                           borderRadius: '4px',
                           fontSize: '14px'
                         }}
@@ -849,15 +733,15 @@ function AdminDashboard({ onLogout }) {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Số lượng</label>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Số lượng</label>
                       <input
                         type="number"
                         value={newProduct.quantity}
                         onChange={(e) => setNewProduct({...newProduct, quantity: e.target.value})}
                         style={{
                           width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
+                          padding: '6px 10px',
+                          border: '1px solid #d1d5db',
                           borderRadius: '4px',
                           fontSize: '14px'
                         }}
@@ -931,17 +815,17 @@ function AdminDashboard({ onLogout }) {
                   <button
                     type="submit"
                     style={{
-                      background: '#007bff',
+                      background: '#10b981',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '4px',
-                      padding: '10px 20px',
+                      padding: '8px 16px',
                       fontSize: '14px',
                       fontWeight: '600',
                       cursor: 'pointer'
                     }}
                   >
-                    Thêm sản phẩm
+                    ➕ Thêm sản phẩm
                   </button>
                 </form>
               </div>
@@ -962,72 +846,72 @@ function AdminDashboard({ onLogout }) {
             ) : (
               <div style={{
                 background: '#fff',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 overflow: 'hidden',
-                border: '1px solid #e9ecef'
+                border: '1px solid #e5e7eb'
               }}>
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse'
                 }}>
                   <thead style={{
-                    background: '#f8f9fa'
+                    background: '#f9fafb'
                   }}>
                     <tr>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'left',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
                       }}>ID</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'left',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
                       }}>Hình ảnh</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'left',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
                       }}>Tên sản phẩm</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'right',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
                       }}>Giá</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'center',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
                       }}>Số lượng</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'left',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
                       }}>Danh mục</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'center',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
                       }}>Thao tác</th>
                     </tr>
@@ -1136,59 +1020,32 @@ function AdminDashboard({ onLogout }) {
                             <button 
                               onClick={() => handleEditProduct(p)}
                               style={{
-                                background: '#007bff',
+                                background: '#667eea',
                                 color: '#fff',
                                 border: 'none',
-                                borderRadius: '6px',
-                                padding: '8px 16px',
+                                borderRadius: '4px',
+                                padding: '6px 12px',
                                 fontSize: '12px',
                                 fontWeight: '600',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#0056b3';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#007bff';
+                                cursor: 'pointer'
                               }}
                             >
-                              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                              </svg>
-                              Sửa
+                              ✏️ Sửa
                             </button>
                             <button 
                               onClick={() => handleDeleteProduct(p._id || p.id)}
                               style={{
-                                background: '#dc3545',
+                                background: '#ef4444',
                                 color: '#fff',
                                 border: 'none',
-                                borderRadius: '6px',
-                                padding: '8px 16px',
+                                borderRadius: '4px',
+                                padding: '6px 12px',
                                 fontSize: '12px',
                                 fontWeight: '600',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = '#c82333';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = '#dc3545';
+                                cursor: 'pointer'
                               }}
                             >
-                              <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd"/>
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
-                              </svg>
-                              Xóa
+                              🗑️ Xóa
                             </button>
                           </div>
                         </td>
@@ -1813,256 +1670,129 @@ function AdminDashboard({ onLogout }) {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '24px',
-              padding: '16px 0',
-              borderBottom: '1px solid #e9ecef'
+              marginBottom: '20px',
+              padding: '12px 0',
+              borderBottom: '1px solid #e5e7eb'
             }}>
-              <h3 style={{ margin: 0, color: '#495057', fontSize: '18px', fontWeight: '600' }}>
-                Quản lý người dùng ({users.length})
+              <h3 style={{ margin: 0, color: '#374151', fontSize: '16px', fontWeight: '600' }}>
+                👥 Quản lý người dùng ({users.length})
               </h3>
               <button 
                 onClick={() => setShowAddUserForm(f => !f)}
                 style={{
-                  background: showAddUserForm ? '#dc3545' : '#28a745',
+                  background: showAddUserForm ? '#ef4444' : '#10b981',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 24px',
+                  borderRadius: '6px',
+                  padding: '8px 16px',
                   fontSize: '14px',
                   fontWeight: '600',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
                 }}
               >
-                {showAddUserForm ? 'Đóng' : 'Thêm người dùng mới'}
+                {showAddUserForm ? '✕ Đóng' : '➕ Thêm người dùng mới'}
               </button>
             </div>
 
-            {/* Add User Form */}
-            {showAddUserForm && (
-              <div style={{
-                background: '#f8f9fa',
-                padding: '24px',
-                borderRadius: '8px',
-                marginBottom: '24px',
-                border: '1px solid #e9ecef'
-              }}>
-                <h4 style={{ margin: '0 0 16px 0', color: '#495057' }}>Thêm người dùng mới</h4>
-                <form onSubmit={handleAddUser}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Tên đăng nhập *</label>
-                      <input
-                        type="text"
-                        value={newUser.username}
-                        onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Email *</label>
-                      <input
-                        type="email"
-                        value={newUser.email}
-                        onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Mật khẩu *</label>
-                      <input
-                        type="password"
-                        value={newUser.password}
-                        onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Vai trò</label>
-                      <select
-                        value={newUser.role}
-                        onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                      >
-                        <option value="customer">Khách hàng</option>
-                        <option value="admin">Quản trị viên</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Địa chỉ</label>
-                      <input
-                        type="text"
-                        value={newUser.address}
-                        onChange={(e) => setNewUser({...newUser, address: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Số điện thoại</label>
-                      <input
-                        type="text"
-                        value={newUser.phone}
-                        onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #ced4da',
-                          borderRadius: '4px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </div>
-                  </div>
-                  {addUserError && (
-                    <div style={{ color: '#dc3545', marginBottom: '16px', fontSize: '14px' }}>
-                      {addUserError}
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={isAddingUser}
-                    style={{
-                      background: isAddingUser ? '#6c757d' : '#007bff',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '10px 20px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: isAddingUser ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {isAddingUser ? 'Đang thêm...' : 'Thêm người dùng'}
-                  </button>
-                </form>
-              </div>
-            )}
 
             {/* Users Table */}
             {userError ? (
               <div style={{
-                padding: '24px',
+                padding: '16px',
                 textAlign: 'center',
-                color: '#dc3545',
-                background: '#f8d7da',
+                color: '#dc2626',
+                background: '#fef2f2',
                 borderRadius: '8px',
-                border: '1px solid #f5c6cb'
+                border: '1px solid #fecaca',
+                fontSize: '14px'
               }}>
                 {userError}
               </div>
             ) : (
               <div style={{
                 background: '#fff',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 overflow: 'hidden',
-                border: '1px solid #e9ecef'
+                border: '1px solid #e5e7eb'
               }}>
                 <table style={{
                   width: '100%',
                   borderCollapse: 'collapse'
                 }}>
                   <thead style={{
-                    background: '#f8f9fa'
+                    background: '#f9fafb'
                   }}>
                     <tr>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'left',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
-                      }}>Tên đăng nhập</th>
+                      }}>👤 Tên đăng nhập</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'left',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
-                      }}>Email</th>
+                      }}>📧 Email</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'center',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
-                      }}>Vai trò</th>
+                      }}>👑 Vai trò</th>
                       <th style={{
-                        padding: '16px',
+                        padding: '12px',
                         textAlign: 'center',
                         fontWeight: '600',
-                        color: '#495057',
-                        borderBottom: '1px solid #e9ecef',
+                        color: '#374151',
+                        borderBottom: '1px solid #e5e7eb',
                         fontSize: '14px'
-                      }}>Thao tác</th>
+                      }}>⚙️ Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((user) => (
                       <tr key={user._id} style={{
-                        borderBottom: '1px solid #e9ecef'
+                        borderBottom: '1px solid #f3f4f6'
                       }}>
                         <td style={{
-                          padding: '16px',
+                          padding: '12px',
                           fontWeight: '500',
-                          color: '#495057'
+                          color: '#374151',
+                          fontSize: '14px'
                         }}>{user.username}</td>
                         <td style={{
-                          padding: '16px',
-                          color: '#6c757d',
+                          padding: '12px',
+                          color: '#6b7280',
                           fontSize: '14px'
                         }}>{user.email}</td>
                         <td style={{
-                          padding: '16px',
+                          padding: '12px',
                           textAlign: 'center'
                         }}>
                           <span style={{
-                            padding: '4px 12px',
-                            borderRadius: '20px',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
                             fontSize: '12px',
                             fontWeight: '600',
-                            background: user.role === 'admin' ? '#d1ecf1' : '#d4edda',
-                            color: user.role === 'admin' ? '#0c5460' : '#155724'
+                            background: user.role === 'admin' ? '#dbeafe' : '#f3f4f6',
+                            color: user.role === 'admin' ? '#1e40af' : '#374151'
                           }}>
-                            {user.role === 'admin' ? 'Quản trị viên' : 'Khách hàng'}
+                            {user.role === 'admin' ? '👑 Admin' : '👤 Khách hàng'}
                           </span>
                         </td>
                         <td style={{
-                          padding: '16px',
+                          padding: '12px',
                           textAlign: 'center'
                         }}>
                           <div style={{
@@ -2072,34 +1802,24 @@ function AdminDashboard({ onLogout }) {
                             alignItems: 'center'
                           }}>
                             <button 
-                              onClick={() => handleEditUser(user)}
-                              style={{
-                                background: '#007bff',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '8px 16px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Sửa
-                            </button>
-                            <button 
                               onClick={() => handleDeleteUser(user._id)}
                               style={{
-                                background: '#dc3545',
+                                background: '#ef4444',
                                 color: '#fff',
                                 border: 'none',
                                 borderRadius: '6px',
-                                padding: '8px 16px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer'
+                                padding: '8px',
+                                fontSize: '16px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '32px',
+                                height: '32px'
                               }}
+                              title="Xóa người dùng"
                             >
-                              Xóa
+                              🗑️
                             </button>
                           </div>
                         </td>
@@ -2126,24 +1846,24 @@ function AdminDashboard({ onLogout }) {
       minHeight: '100vh',
       background: '#f8f9fa'
     }}>
-      {/* Sidebar */}
+      {/* Sidebar - Đơn giản */}
       <div style={{
-        width: '250px',
-        background: '#343a40',
+        width: '220px',
+        background: '#667eea',
         color: '#fff',
-        padding: '20px 0'
+        padding: '16px 0'
       }}>
         <div style={{
-          padding: '0 20px',
-          marginBottom: '30px'
+          padding: '0 16px',
+          marginBottom: '20px'
         }}>
           <h2 style={{
             margin: 0,
-            fontSize: '20px',
+            fontSize: '18px',
             fontWeight: '700',
             color: '#fff'
           }}>
-            Admin Dashboard
+            👑 Admin Dashboard
           </h2>
         </div>
         
@@ -2160,41 +1880,37 @@ function AdminDashboard({ onLogout }) {
               }}
               style={{
                 width: '100%',
-                padding: '12px 20px',
-                background: active === item.key ? '#007bff' : 'transparent',
+                padding: '10px 16px',
+                background: active === item.key ? '#5a67d8' : 'transparent',
                 color: '#fff',
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: '500',
-                transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px'
-              }}
-              onMouseEnter={(e) => {
-                if (active !== item.key) {
-                  e.target.style.background = '#495057';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (active !== item.key) {
-                  e.target.style.background = 'transparent';
-                }
+                gap: '8px'
               }}
             >
+              {item.key === 'products' && '📦'}
+              {item.key === 'categories' && '🏷️'}
+              {item.key === 'users' && '👥'}
+              {item.key === 'orders' && '📋'}
+              {item.key === 'revenue' && '📊'}
+              {item.key === 'logout' && '🚪'}
               {item.label}
             </button>
           ))}
         </nav>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Đơn giản */}
       <div style={{
         flex: 1,
-        padding: '30px',
-        overflow: 'auto'
+        padding: '20px',
+        overflow: 'auto',
+        background: '#fff'
       }}>
         {renderContent()}
       </div>
@@ -2407,6 +2123,221 @@ function AdminDashboard({ onLogout }) {
                   }}
                 >
                   Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add User Popup */}
+      {showAddUserForm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#fff',
+            padding: '24px',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '500px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h3 style={{ margin: 0, color: '#374151', fontSize: '18px', fontWeight: '600' }}>
+                👤 Thêm người dùng mới
+              </h3>
+              <button
+                onClick={() => setShowAddUserForm(false)}
+                style={{
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAddUser}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Tên đăng nhập *</label>
+                  <input
+                    type="text"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Email *</label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Mật khẩu *</label>
+                  <input
+                    type="password"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Vai trò</label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="customer">Khách hàng</option>
+                    <option value="admin">Quản trị viên</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Địa chỉ</label>
+                  <input
+                    type="text"
+                    value={newUser.address}
+                    onChange={(e) => setNewUser({...newUser, address: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '14px' }}>Số điện thoại</label>
+                  <input
+                    type="text"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </div>
+              
+              {addUserError && (
+                <div style={{ 
+                  background: '#fef2f2',
+                  color: '#dc2626',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  marginBottom: '16px',
+                  fontSize: '14px',
+                  border: '1px solid #fecaca'
+                }}>
+                  {addUserError}
+                </div>
+              )}
+              
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserForm(false)}
+                  style={{
+                    background: '#6b7280',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '10px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAddingUser}
+                  style={{
+                    background: isAddingUser ? '#9ca3af' : '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '10px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: isAddingUser ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {isAddingUser ? 'Đang thêm...' : '➕ Thêm người dùng'}
                 </button>
               </div>
             </form>
