@@ -168,6 +168,22 @@ const styles = {
     fontSize: '14px',
     fontWeight: '700'
   },
+  paymentMethodSection: {
+    padding: '12px 0',
+    borderTop: '1px solid rgba(255,255,255,0.2)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  paymentMethodLabel: {
+    fontSize: '14px',
+    fontWeight: '600',
+    opacity: '0.9'
+  },
+  paymentMethodValue: {
+    fontSize: '14px',
+    fontWeight: '600'
+  },
   totalSection: {
     padding: '16px 0',
     borderTop: '2px solid rgba(255,255,255,0.3)',
@@ -185,7 +201,7 @@ const styles = {
   }
 }
 
-function CheckoutPage({ cart, user, onBack, onClearCart }) {
+function CheckoutPage({ cart, user, onBack, onClearCart, onClearCartSilent, onViewOrder, onGoToVNPay, showToast }) {
   const [formData, setFormData] = useState({
     fullName: user?.username || '',
     email: user?.email || '',
@@ -233,28 +249,40 @@ function CheckoutPage({ cart, user, onBack, onClearCart }) {
     const missingFields = requiredFields.filter(field => !formData[field])
     
     if (missingFields.length > 0) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc!')
+      if (showToast) {
+        showToast.showError('Vui lòng điền đầy đủ thông tin bắt buộc!')
+      } else {
+        alert('Vui lòng điền đầy đủ thông tin bắt buộc!')
+      }
       return false
     }
     
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
-      alert('Vui lòng nhập email hợp lệ!')
+      if (showToast) {
+        showToast.showError('Vui lòng nhập email hợp lệ!')
+      } else {
+        alert('Vui lòng nhập email hợp lệ!')
+      }
       return false
     }
     
     // Phone validation
     const phoneRegex = /^[0-9]{10,11}$/
     if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
-      alert('Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số)!')
+      if (showToast) {
+        showToast.showError('Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số)!')
+      } else {
+        alert('Vui lòng nhập số điện thoại hợp lệ (10-11 chữ số)!')
+      }
       return false
     }
     
     return true
-  }, [formData])
+  }, [formData, showToast])
 
-  const handleSubmit = useCallback((e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault()
     
     if (!validateForm()) {
@@ -266,16 +294,129 @@ function CheckoutPage({ cart, user, onBack, onClearCart }) {
     const confirmPayment = window.confirm(
       `Xác nhận thanh toán?\n\n` +
       `Tổng tiền: ${formatPrice(total)}\n` +
+
       `Phương thức: ${formData.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản'}\n` +
       `Thông tin sẽ được gửi đến email: ${formData.email}${notesText}`
+
+      `Phương thức: ${formData.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Chuyển khoản'}\n\n`
+
     )
 
     if (confirmPayment) {
-      alert('Đặt hàng thành công!\n\nĐơn hàng của bạn đã được xử lý. Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.')
-      onClearCart() // Clear cart after successful payment
-      onBack() // Go back to main page
+      try {
+        // Prepare order data for API
+        const orderData = {
+          items: cart.map(item => ({
+            productId: item.id,
+            quantity: item.quantity
+          })),
+          shippingAddress: formData.address,
+          phone: formData.phone,
+          notes: formData.notes,
+          paymentMethod: formData.paymentMethod
+        }
+
+        // Create order in database
+        const token = localStorage.getItem('token')
+        console.log('Creating order with data:', orderData)
+        console.log('Token:', token ? 'Present' : 'Missing')
+        
+        const response = await fetch('http://localhost:5000/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(orderData)
+        })
+
+        console.log('Response status:', response.status)
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('Response error:', errorText)
+          throw new Error(`HTTP ${response.status}: ${errorText}`)
+        }
+        
+        const result = await response.json()
+        console.log('Response result:', result)
+
+        if (result.success) {
+          // Create order info for display
+          const orderInfo = {
+            orderId: result.data.orderId,
+            orderDate: new Date(result.data.createdAt).toLocaleString('vi-VN'),
+            status: 'Đang xử lý',
+            customer: {
+              fullName: formData.fullName,
+              email: formData.email,
+              phone: formData.phone,
+              address: formData.address
+            },
+            paymentMethod: formData.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản ngân hàng',
+            items: cart.map(item => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image
+            })),
+            notes: formData.notes,
+            total: total
+          }
+
+          // Kiểm tra phương thức thanh toán
+          if (formData.paymentMethod === 'vnpay') {
+            // VNPay - chuyển đến trang thanh toán VNPay
+            const vnpayOrderInfo = {
+              orderId: result.data.orderId,
+              orderDate: new Date(result.data.createdAt).toLocaleString('vi-VN'),
+              status: 'Chờ thanh toán',
+              customer: {
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                address: formData.address
+              },
+              paymentMethod: 'Thanh toán qua VNPay',
+              items: cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                image: item.image
+              })),
+              notes: formData.notes,
+              total: total
+            }
+            onGoToVNPay(vnpayOrderInfo)
+          } else {
+            // COD - xử lý bình thường
+            if (showToast) {
+              showToast.showSuccess('Đặt hàng thành công! Đơn hàng của bạn đã được xử lý. Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.')
+            } else {
+              alert('Đặt hàng thành công!\n\nĐơn hàng của bạn đã được xử lý. Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất.')
+            }
+            
+            // Clear cart after successful order (silent - no popup)
+            onClearCartSilent()
+            
+            onViewOrder(orderInfo) // Navigate to View Order page with order data
+          }
+        } else {
+          throw new Error(result.error || 'Có lỗi xảy ra khi tạo đơn hàng')
+        }
+      } catch (error) {
+        console.error('Error creating order:', error)
+        const errorMessage = error.message || 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.'
+        if (showToast) {
+          showToast.showError(errorMessage)
+        } else {
+          alert(errorMessage)
+        }
+      }
     }
-  }, [formData, total, formatPrice, validateForm, onClearCart, onBack])
+  }, [formData, total, formatPrice, validateForm, onViewOrder, onGoToVNPay, onClearCartSilent, cart, showToast])
 
   // Component cho nút với hover effects
   const ButtonWithHover = ({ children, style, onClick, disabled = false, ...props }) => (
@@ -501,12 +642,12 @@ function CheckoutPage({ cart, user, onBack, onClearCart }) {
                 />
 
                 <PaymentOption
-                  value="bank"
-                  checked={formData.paymentMethod === 'bank'}
+                  value="vnpay"
+                  checked={formData.paymentMethod === 'vnpay'}
                   onChange={handleInputChange}
                   icon="🏦"
-                  title="Chuyển khoản ngân hàng"
-                  description="Chuyển khoản trước khi giao hàng"
+                  title="Thanh toán qua VNPay"
+                  description="Thanh toán trực tuyến an toàn qua ngân hàng"
                 />
               </div>
             </div>
@@ -541,6 +682,16 @@ function CheckoutPage({ cart, user, onBack, onClearCart }) {
               {cart.map((item, index) => (
                 <OrderItem key={index} item={item} />
               ))}
+            </div>
+
+            {/* Payment Method */}
+            <div style={styles.paymentMethodSection}>
+              <span style={styles.paymentMethodLabel}>
+                Phương thức thanh toán:
+              </span>
+              <span style={styles.paymentMethodValue}>
+                {formData.paymentMethod === 'cod' ? '💰 Thanh toán khi nhận hàng (COD)' : '🏦 Thanh toán qua VNPay'}
+              </span>
             </div>
 
             {/* Total */}

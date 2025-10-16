@@ -296,8 +296,18 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
           {/* Nút thêm vào giỏ hàng */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button 
+
               onClick={() => onAddToCart && onAddToCart(product)}
               disabled={product.quantity === 0 || !user}
+
+              onClick={() => {
+                if (!user) {
+                  alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
+                  return
+                }
+                onAddToCart && onAddToCart(product)
+              }}
+              disabled={product.quantity === 0}
               style={{
                 padding: '12px 24px',
                 background: (product.quantity > 0 && user) ? '#1976d2' : '#ccc',

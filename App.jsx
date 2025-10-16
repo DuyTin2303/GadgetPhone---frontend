@@ -7,6 +7,10 @@ import AdminDashboard from './AdminDashboard'
 import CartPage from './CartPage'
 import CheckoutPage from './CheckoutPage'
 import WishlistPage from './WishlistPage'
+import ViewOrder from './ViewOrder'
+import VNPayPage from './VNPayPage'
+import OrderHistory from './OrderHistory'
+import { ToastManager, useToast } from './Toast'
 
 // Styles constants
 const styles = {
@@ -155,6 +159,14 @@ function App() {
   const [showCart, setShowCart] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
   const [showWishlist, setShowWishlist] = useState(false)
+  const [showViewOrder, setShowViewOrder] = useState(false)
+  const [showVNPay, setShowVNPay] = useState(false)
+  const [showOrderHistory, setShowOrderHistory] = useState(false)
+  const [orderData, setOrderData] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+  
+  // Toast management
+  const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast()
   const [cart, setCart] = useState(() => {
     // Load cart from localStorage on initialization
     try {
@@ -245,10 +257,17 @@ function App() {
 
   // Cart functions
   const handleAddToCart = useCallback((product) => {
+
     // Kiểm tra nếu người dùng chưa đăng nhập
     if (!user) {
       alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
       setShowAuth(true) // Mở form đăng nhập
+
+    // Kiểm tra đăng nhập trước khi thêm vào giỏ hàng
+    if (!user) {
+      showError('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
+      setShowAuth(true) // Hiển thị form đăng nhập
+
       return
     }
 
@@ -270,13 +289,17 @@ function App() {
       }])
     }
     setShowCart(true) // Chuyển sang trang Cart
+
   }, [cart, buildImageUrl, user])
+
+  }, [cart, buildImageUrl, user, showError])
+
 
   const handleRemoveFromCart = useCallback((index) => {
     const removedItem = cart[index]
     setCart(cart.filter((_, i) => i !== index))
-    alert(`Đã xóa "${removedItem.name}" khỏi giỏ hàng!`)
-  }, [cart])
+    showSuccess(`Đã xóa "${removedItem.name}" khỏi giỏ hàng!`)
+  }, [cart, showSuccess])
 
   const handleUpdateQuantity = useCallback((index, newQuantity) => {
     if (newQuantity <= 0) {
@@ -293,8 +316,14 @@ function App() {
   }, [])
 
   const handleGoToCheckout = useCallback(() => {
+    // Kiểm tra đăng nhập trước khi thanh toán
+    if (!user) {
+      showError('Vui lòng đăng nhập để thực hiện thanh toán!')
+      setShowAuth(true) // Hiển thị form đăng nhập
+      return
+    }
     setShowCheckout(true)
-  }, [])
+  }, [user, showError])
 
   const handleBackFromCheckout = useCallback(() => {
     setShowCheckout(false)
@@ -304,11 +333,62 @@ function App() {
     setShowWishlist(false)
   }, [])
 
+  const handleBackFromOrderHistory = useCallback(() => {
+    setShowOrderHistory(false)
+  }, [])
+
+  const handleViewOrder = useCallback((orderInfo) => {
+    setOrderData(orderInfo)
+    setShowViewOrder(true)
+    setShowCheckout(false)
+    setShowVNPay(false)
+  }, [])
+
+  const handleGoToVNPay = useCallback((orderInfo) => {
+    setOrderData(orderInfo)
+    setShowVNPay(true)
+    setShowCheckout(false)
+  }, [])
+
+  const handleBackFromVNPay = useCallback(() => {
+    setShowVNPay(false)
+  }, [])
+
+  const handleVNPaySuccess = useCallback((orderInfo) => {
+    setOrderData(orderInfo)
+    setShowViewOrder(true)
+    setShowVNPay(false)
+  }, [])
+
+  const handleVNPayCancel = useCallback(() => {
+    setShowVNPay(false)
+    setShowCheckout(true)
+  }, [])
+
+
+  const handleBackFromViewOrder = useCallback(() => {
+    setShowViewOrder(false)
+    setOrderData(null)
+  }, [])
+
+  const handleContinueShopping = useCallback(() => {
+    setShowViewOrder(false)
+    setOrderData(null)
+    setShowCart(false)
+    setShowCheckout(false)
+    setShowVNPay(false)
+  }, [])
+
   const handleClearCart = useCallback(() => {
     const confirmClear = window.confirm('Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?')
     if (confirmClear) {
       setCart([])
+      showSuccess('Đã xóa tất cả sản phẩm khỏi giỏ hàng!')
     }
+  }, [showSuccess])
+
+  const handleClearCartSilent = useCallback(() => {
+    setCart([])
   }, [])
 
   // Navigation handlers
@@ -318,7 +398,11 @@ function App() {
     setShowCart(false)
     setShowCheckout(false)
     setShowWishlist(false)
+    setShowViewOrder(false)
+    setShowVNPay(false)
+    setShowOrderHistory(false)
     setSelectedProductId(null)
+    setOrderData(null)
   }, [])
 
   // Component cho button với hover effects đơn giản
@@ -364,6 +448,7 @@ function App() {
       </div>
       
       <div style={styles.navButtons}>
+
         {user && (
           <ButtonWithHover 
             onClick={() => setShowCart(true)}
@@ -378,6 +463,25 @@ function App() {
             )}
           </ButtonWithHover>
         )}
+
+        <ButtonWithHover 
+          onClick={() => {
+            if (!user) {
+              showError('Vui lòng đăng nhập để xem giỏ hàng!')
+              setShowAuth(true)
+              return
+            }
+            setShowCart(true)
+          }}
+          style={styles.navButton}
+        >
+          🛒
+          {cart.length > 0 && (
+            <span style={styles.cartBadge}>
+              {cart.length}
+            </span>
+          )}
+        </ButtonWithHover>
         
         {user && (
           <ButtonWithHover 
@@ -408,19 +512,37 @@ function App() {
             🔐 Đăng nhập
           </ButtonWithHover>
         )}
+        
       </div>
     </nav>
-  ), [search, cart.length, user, handleSearch, handleGoHome])
+  ), [search, cart.length, user, handleSearch, handleGoHome, showError])
 
   // Content wrapper component
   const ContentWrapper = useCallback(() => (
     <div style={styles.contentWrapper}>
-      {showCheckout ? (
+      {showViewOrder ? (
+        <ViewOrder 
+          orderData={orderData}
+          onBack={handleBackFromViewOrder}
+          onContinueShopping={handleContinueShopping}
+        />
+      ) : showVNPay ? (
+        <VNPayPage 
+          orderData={orderData}
+          onBack={handleBackFromVNPay}
+          onPaymentSuccess={handleVNPaySuccess}
+          onPaymentCancel={handleVNPayCancel}
+        />
+      ) : showCheckout ? (
         <CheckoutPage 
           cart={cart} 
           user={user}
           onBack={handleBackFromCheckout}
           onClearCart={handleClearCart}
+          onClearCartSilent={handleClearCartSilent}
+          onViewOrder={handleViewOrder}
+          onGoToVNPay={handleGoToVNPay}
+          showToast={{ showSuccess, showError, showWarning, showInfo }}
         />
       ) : showCart ? (
         <CartPage 
@@ -437,6 +559,11 @@ function App() {
           onViewDetail={handleViewProductDetail}
           onBack={handleBackFromWishlist}
         />
+      ) : showOrderHistory ? (
+        <OrderHistory 
+          user={user}
+          onBack={handleBackFromOrderHistory}
+        />
       ) : showProductDetail ? (
         <ProductDetail 
           productId={selectedProductId} 
@@ -445,16 +572,22 @@ function App() {
           user={user}
         />
       ) : (
+
         <ProductList search={search} onViewDetail={handleViewProductDetail} user={user} />
+
+        <ProductList key={refreshKey} search={search} onViewDetail={handleViewProductDetail} />
+
       )}
     </div>
   ), [
-    showCheckout, showCart, showWishlist, showProductDetail, 
-    cart, user, selectedProductId, search,
-    handleBackFromCheckout, handleClearCart,
+    showViewOrder, showVNPay, showCheckout, showCart, showWishlist, showOrderHistory, showProductDetail, 
+    cart, user, selectedProductId, search, orderData, refreshKey,
+    handleBackFromViewOrder, handleContinueShopping,
+    handleBackFromVNPay, handleVNPaySuccess, handleVNPayCancel,
+    handleBackFromCheckout, handleClearCart, handleClearCartSilent, handleViewOrder, handleGoToVNPay,
     handleRemoveFromCart, handleUpdateQuantity,
     handleBackFromCart, handleGoToCheckout,
-    handleBackFromWishlist, handleBackToList, 
+    handleBackFromWishlist, handleBackFromOrderHistory, handleBackToList, 
     handleAddToCart, handleViewProductDetail
   ])
 
@@ -745,14 +878,114 @@ function App() {
                   >
                     🔐 Đổi mật khẩu
                   </button>
+
+                </div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: user?.role !== 'admin' ? 'repeat(2, 1fr)' : '1fr', 
+                  gap: '12px',
+                  marginBottom: '16px'
+                }}>
+                  {user?.role !== 'admin' && (
+                    <button 
+                      onClick={() => {
+                        setShowProfile(false);
+                        setShowOrderHistory(true);
+                      }} 
+                      title="Lịch sử đơn hàng"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', 
+                        color: '#fff', 
+                        border: 'none', 
+                        borderRadius: '16px', 
+                        padding: '16px', 
+                        fontWeight: '600', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        fontSize: '16px',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-2px)'
+                        e.target.style.boxShadow = '0 8px 25px rgba(139, 92, 246, 0.4)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)'
+                        e.target.style.boxShadow = '0 4px 15px rgba(139, 92, 246, 0.3)'
+                      }}
+                    >
+                      📦
+                    </button>
+                  )}
                   
+                  <button 
+                    onClick={() => setShowWishlist(true)} 
+                    title="Danh sách yêu thích"
+                    style={{ 
+                      background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)', 
+                      color: '#fff', 
+                      border: 'none', 
+                      borderRadius: '16px', 
+                      padding: '16px', 
+                      fontWeight: '600', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      fontSize: '16px',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)'
+                      e.target.style.boxShadow = '0 8px 25px rgba(236, 72, 153, 0.4)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)'
+                      e.target.style.boxShadow = '0 4px 15px rgba(236, 72, 153, 0.3)'
+                    }}
+                  >
+                    ❤️
+                  </button>
+                </div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(2, 1fr)', 
+                  gap: '12px'
+                }}>
+
                   <button 
                     onClick={() => { 
                       localStorage.removeItem('token'); 
                       setUser(null); 
                       setShowProfile(false);
+
+                      
+                      // Nếu đang ở trang ViewOrder, VNPay hoặc OrderHistory, đưa về trang chủ
+                      if (showViewOrder || showVNPay || showOrderHistory) {
+                        setShowViewOrder(false);
+                        setShowVNPay(false);
+                        setShowOrderHistory(false);
+                        setOrderData(null);
+                        setShowHomepage(true);
+                        setShowProductDetail(false);
+                        setShowCart(false);
+                        setShowCheckout(false);
+                        setShowWishlist(false);
+                        setSelectedProductId(null);
+                      }
+                      
+                      // Giữ nguyên cart khi logout
+
                       if (cart.length > 0) {
-                        alert(`Đã đăng xuất thành công!\n\nGiỏ hàng của bạn (${cart.length} sản phẩm) vẫn được lưu và có thể tiếp tục mua sắm.`)
+                        alert(`Đã đăng xuất thành công!\n\nGiỏ hàng của bạn (${cart.length} sản phẩm) vẫn được lưu.\n\nLưu ý: Bạn cần đăng nhập lại để có thể mua sắm và thanh toán.`)
                       }
                     }} 
                     style={{ 
@@ -999,7 +1232,7 @@ function App() {
         </div>
       </div>
     )
-  }, [showProfile, user, editProfile, editData, cart.length])
+  }, [showProfile, user, editProfile, editData, cart.length, showViewOrder, showVNPay])
 
   // Nếu user là admin
   if (user && user.role === 'admin') {
@@ -1007,6 +1240,16 @@ function App() {
       localStorage.removeItem('token');
       setUser(null);
       setShowHomepage(false);
+      // Reset tất cả trạng thái khi admin logout
+      setShowViewOrder(false);
+      setShowVNPay(false);
+      setShowOrderHistory(false);
+      setOrderData(null);
+      setShowProductDetail(false);
+      setShowCart(false);
+      setShowCheckout(false);
+      setShowWishlist(false);
+      setSelectedProductId(null);
     }} />
   }
 
@@ -1289,6 +1532,9 @@ function App() {
             </div>
           </div>
         )}
+        
+        {/* Toast Notifications */}
+        <ToastManager toasts={toasts} onRemoveToast={removeToast} />
       </>
     )
   )
