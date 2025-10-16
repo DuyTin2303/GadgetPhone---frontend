@@ -17,14 +17,21 @@ function ProductList({ search, onViewDetail }) {
   }
 
   useEffect(() => {
+    console.log('ProductList: Fetching products...')
+    setLoading(true)
+    
     // Load products
     fetch('http://localhost:5000/api/products')
       .then(res => res.json())
       .then(data => {
+        console.log('ProductList: Products loaded:', data)
         setProducts(data)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch((error) => {
+        console.error('ProductList: Error loading products:', error)
+        setLoading(false)
+      })
     
     // Load categories
     fetch('http://localhost:5000/api/categories')

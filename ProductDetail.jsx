@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-function ProductDetail({ productId, onBack, onAddToCart }) {
+function ProductDetail({ productId, onBack, onAddToCart, user }) {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -295,7 +295,13 @@ function ProductDetail({ productId, onBack, onAddToCart }) {
           {/* Nút thêm vào giỏ hàng */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button 
-              onClick={() => onAddToCart && onAddToCart(product)}
+              onClick={() => {
+                if (!user) {
+                  alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
+                  return
+                }
+                onAddToCart && onAddToCart(product)
+              }}
               disabled={product.quantity === 0}
               style={{
                 padding: '12px 24px',
