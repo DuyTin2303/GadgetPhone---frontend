@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import RevenueBarChart from './RevenueBarChart';
+import AdminOrderManagement from './AdminOrderManagement';
 
 const menuItems = [
   { key: 'products', label: 'Quản lý sản phẩm' },
@@ -2111,6 +2112,9 @@ function AdminDashboard({ onLogout }) {
             )}
           </div>
         );
+
+      case 'orders':
+        return <AdminOrderManagement />;
 
       case 'revenue':
         return <RevenueBarChart />;
