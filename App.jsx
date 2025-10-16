@@ -257,17 +257,10 @@ function App() {
 
   // Cart functions
   const handleAddToCart = useCallback((product) => {
-
-    // Kiểm tra nếu người dùng chưa đăng nhập
-    if (!user) {
-      alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
-      setShowAuth(true) // Mở form đăng nhập
-
     // Kiểm tra đăng nhập trước khi thêm vào giỏ hàng
     if (!user) {
       showError('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!')
       setShowAuth(true) // Hiển thị form đăng nhập
-
       return
     }
 
@@ -289,9 +282,6 @@ function App() {
       }])
     }
     setShowCart(true) // Chuyển sang trang Cart
-
-  }, [cart, buildImageUrl, user])
-
   }, [cart, buildImageUrl, user, showError])
 
 
@@ -449,21 +439,6 @@ function App() {
       
       <div style={styles.navButtons}>
 
-        {user && (
-          <ButtonWithHover 
-            onClick={() => setShowCart(true)}
-            style={styles.navButton}
-            title="Giỏ hàng"
-          >
-            🛒 Giỏ hàng
-            {cart.length > 0 && (
-              <span style={styles.cartBadge}>
-                {cart.length}
-              </span>
-            )}
-          </ButtonWithHover>
-        )}
-
         <ButtonWithHover 
           onClick={() => {
             if (!user) {
@@ -474,8 +449,9 @@ function App() {
             setShowCart(true)
           }}
           style={styles.navButton}
+          title="Giỏ hàng"
         >
-          🛒
+          🛒 Giỏ hàng
           {cart.length > 0 && (
             <span style={styles.cartBadge}>
               {cart.length}
@@ -572,11 +548,7 @@ function App() {
           user={user}
         />
       ) : (
-
-        <ProductList search={search} onViewDetail={handleViewProductDetail} user={user} />
-
-        <ProductList key={refreshKey} search={search} onViewDetail={handleViewProductDetail} />
-
+        <ProductList key={refreshKey} search={search} onViewDetail={handleViewProductDetail} user={user} />
       )}
     </div>
   ), [
