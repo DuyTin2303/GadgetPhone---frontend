@@ -183,6 +183,48 @@ const OrderHistory = ({ user, onBack }) => {
     }
   };
 
+  // Handle payment for VNPay orders
+  const handlePayment = async (orderId) => {
+    const confirmPayment = window.confirm('Bạn có chắc muốn thanh toán cho đơn hàng này?');
+    if (!confirmPayment) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Tìm đơn hàng để lấy thông tin
+      const order = orders.find(o => o.orderId === orderId);
+      if (!order) {
+        alert('Không tìm thấy thông tin đơn hàng');
+        return;
+      }
+
+      // Tạo payment URL từ VNPay
+      const response = await fetch(`${API_BASE}/api/payment/vnpay/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          orderId: orderId,
+          amount: order.totalAmount,
+          orderDescription: `Thanh toán đơn hàng ${orderId}`
+        })
+      });
+
+      const data = await response.json();
+      if (data.success && data.paymentUrl) {
+        // Chuyển hướng đến trang thanh toán VNPay
+        window.location.href = data.paymentUrl;
+      } else {
+        alert('Có lỗi xảy ra khi tạo link thanh toán: ' + (data.error || 'Lỗi không xác định'));
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      alert('Không thể kết nối đến server');
+    }
+  };
+
   if (showOrderDetail && selectedOrder) {
     return (
       <div style={styles.container}>
@@ -295,17 +337,27 @@ const OrderHistory = ({ user, onBack }) => {
             </div>
             
             {/* Action Buttons */}
-            {(selectedOrder.status === 'pending' || selectedOrder.status === 'processing') && 
-             selectedOrder.paymentStatus !== 'cancelled' && (
-              <div style={styles.detailActionButtons}>
+            <div style={styles.detailActionButtons}>
+              {/* Payment Button for VNPay orders with pending payment */}
+              {selectedOrder.paymentMethod === 'vnpay' && selectedOrder.paymentStatus === 'pending' && (
+                <button 
+                  onClick={() => handlePayment(selectedOrder.orderId)}
+                  style={styles.detailPaymentButton}
+                >
+                  💳 Thanh toán ngay
+                </button>
+              )}
+              
+              {(selectedOrder.status === 'pending' || selectedOrder.status === 'processing') && 
+               selectedOrder.paymentStatus !== 'cancelled' && (
                 <button 
                   onClick={() => handleCancelOrder(selectedOrder.orderId)}
                   style={styles.detailCancelButton}
                 >
                   ❌ Hủy đơn hàng
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -830,9 +882,22 @@ const styles = {
   detailActionButtons: {
     display: 'flex',
     justifyContent: 'center',
+    gap: '12px',
     marginTop: '20px',
     paddingTop: '20px',
     borderTop: '1px solid #e5e7eb'
+  },
+  detailPaymentButton: {
+    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '12px 24px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)'
   },
   detailCancelButton: {
     background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',

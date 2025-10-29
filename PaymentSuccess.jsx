@@ -100,19 +100,41 @@ function PaymentSuccess() {
     // Lấy thông tin từ URL parameters
     const urlParams = new URLSearchParams(window.location.search)
     const orderId = urlParams.get('orderId')
-    const amount = urlParams.get('amount')
-    const success = urlParams.get('success')
+    const transactionId = urlParams.get('transactionId')
 
-    console.log('🎉 Payment success - Order ID:', orderId, 'Amount:', amount, 'Success:', success)
+    console.log('🎉 Payment success - Order ID:', orderId, 'Transaction ID:', transactionId)
 
-    if (orderId && amount && success === 'true') {
-      setOrderInfo({
-        orderId: orderId,
-        amount: parseInt(amount)
-      })
+    if (orderId) {
+      // Fetch order details from API
+      const fetchOrderDetails = async () => {
+        try {
+          const token = localStorage.getItem('token')
+          const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          const data = await response.json()
+          if (data.success) {
+            setOrderInfo({
+              orderId: orderId,
+              amount: data.data.totalAmount,
+              transactionId: transactionId,
+              paymentMethod: data.data.paymentMethod,
+              status: data.data.paymentStatus
+            })
+          }
+        } catch (error) {
+          console.error('Error fetching order details:', error)
+        }
+      }
+      
+      fetchOrderDetails()
     } else {
       // Nếu không có thông tin hợp lệ, chuyển về trang lỗi
-      window.location.href = '/payment/fail?error=invalid_success_data'
+      window.location.href = '/payment-fail?error=invalid_success_data'
     }
     setLoading(false)
   }, [])
@@ -170,11 +192,21 @@ function PaymentSuccess() {
           </div>
           <div style={styles.infoRow}>
             <span style={styles.infoLabel}>Phương thức thanh toán:</span>
-            <span style={styles.infoValue}>VNPay</span>
+            <span style={styles.infoValue}>
+              {orderInfo.paymentMethod === 'vnpay' ? 'VNPay' : 'Thanh toán khi nhận hàng'}
+            </span>
           </div>
+          {orderInfo.transactionId && (
+            <div style={styles.infoRow}>
+              <span style={styles.infoLabel}>Mã giao dịch:</span>
+              <span style={styles.infoValue}>{orderInfo.transactionId}</span>
+            </div>
+          )}
           <div style={styles.infoRow}>
             <span style={styles.infoLabel}>Trạng thái:</span>
-            <span style={styles.infoValue}>Đã thanh toán</span>
+            <span style={styles.infoValue}>
+              {orderInfo.status === 'paid' ? 'Đã thanh toán' : orderInfo.status}
+            </span>
           </div>
         </div>
       )}

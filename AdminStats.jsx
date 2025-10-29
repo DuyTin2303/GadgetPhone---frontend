@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const RevenueBarChart = () => {
+const AdminStats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState(null);
@@ -37,7 +37,6 @@ const RevenueBarChart = () => {
         setError('');
       } catch (err) {
         setError(err.message);
-        console.error('Error fetching stats:', err);
       } finally {
         setLoading(false);
       }
@@ -80,7 +79,7 @@ const RevenueBarChart = () => {
             margin: '0 auto 16px'
           }}></div>
           <p style={{ margin: 0, color: '#6c757d', fontSize: '16px' }}>
-            Đang tải thống kê doanh thu...
+            Đang tải dữ liệu thống kê...
           </p>
         </div>
       </div>
@@ -99,7 +98,7 @@ const RevenueBarChart = () => {
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
         <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: '600' }}>
-          Lỗi tải thống kê doanh thu
+          Lỗi tải dữ liệu
         </h3>
         <p style={{ margin: '0 0 16px 0', fontSize: '14px' }}>{error}</p>
         <button 
@@ -132,7 +131,7 @@ const RevenueBarChart = () => {
       }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
         <p style={{ margin: 0, color: '#6c757d', fontSize: '16px' }}>
-          Không có dữ liệu thống kê doanh thu
+          Không có dữ liệu thống kê
         </p>
       </div>
     );
@@ -162,25 +161,25 @@ const RevenueBarChart = () => {
           alignItems: 'center',
           gap: '12px'
         }}>
-          💰 Thống kê doanh thu
+          📊 Thống kê hệ thống
         </h1>
         <p style={{
           margin: '8px 0 0 0',
           color: '#6c757d',
           fontSize: '16px'
         }}>
-          Dashboard thống kê doanh thu và hiệu suất kinh doanh
+          Dashboard thống kê tổng quan cho quản trị viên
         </p>
       </div>
 
-      {/* Revenue Cards */}
+      {/* Stats Cards */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
         gap: '20px',
         marginBottom: '30px'
       }}>
-        {/* Total Revenue */}
+        {/* Total Users */}
         <div style={{
           background: '#fff',
           padding: '24px',
@@ -191,28 +190,28 @@ const RevenueBarChart = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h3 style={{ margin: '0 0 8px 0', color: '#6c757d', fontSize: '14px', fontWeight: '500' }}>
-                Tổng doanh thu
+                Tổng người dùng
               </h3>
-              <p style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#28a745' }}>
-                {formatCurrency(stats.overview?.totalRevenue)}
+              <p style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#495057' }}>
+                {formatNumber(stats.overview?.totalUsers)}
               </p>
             </div>
             <div style={{
               width: '60px',
               height: '60px',
-              background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '24px'
             }}>
-              💰
+              👥
             </div>
           </div>
         </div>
 
-        {/* Monthly Revenue */}
+        {/* Total Products */}
         <div style={{
           background: '#fff',
           padding: '24px',
@@ -223,42 +222,10 @@ const RevenueBarChart = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h3 style={{ margin: '0 0 8px 0', color: '#6c757d', fontSize: '14px', fontWeight: '500' }}>
-                Doanh thu tháng này
+                Tổng sản phẩm
               </h3>
-              <p style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#007bff' }}>
-                {formatCurrency(stats.monthly?.revenue)}
-              </p>
-            </div>
-            <div style={{
-              width: '60px',
-              height: '60px',
-              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '24px'
-            }}>
-              📈
-            </div>
-          </div>
-        </div>
-
-        {/* Weekly Revenue */}
-        <div style={{
-          background: '#fff',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          border: '1px solid #e9ecef'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h3 style={{ margin: '0 0 8px 0', color: '#6c757d', fontSize: '14px', fontWeight: '500' }}>
-                Doanh thu tuần này
-              </h3>
-              <p style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#ffc107' }}>
-                {formatCurrency(stats.weekly?.revenue)}
+              <p style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#495057' }}>
+                {formatNumber(stats.overview?.totalProducts)}
               </p>
             </div>
             <div style={{
@@ -271,7 +238,7 @@ const RevenueBarChart = () => {
               justifyContent: 'center',
               fontSize: '24px'
             }}>
-              📊
+              📦
             </div>
           </div>
         </div>
@@ -289,14 +256,14 @@ const RevenueBarChart = () => {
               <h3 style={{ margin: '0 0 8px 0', color: '#6c757d', fontSize: '14px', fontWeight: '500' }}>
                 Tổng đơn hàng
               </h3>
-              <p style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#6f42c1' }}>
+              <p style={{ margin: 0, fontSize: '28px', fontWeight: '700', color: '#495057' }}>
                 {formatNumber(stats.overview?.totalOrders)}
               </p>
             </div>
             <div style={{
               width: '60px',
               height: '60px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
@@ -304,6 +271,38 @@ const RevenueBarChart = () => {
               fontSize: '24px'
             }}>
               🛒
+            </div>
+          </div>
+        </div>
+
+        {/* Total Revenue */}
+        <div style={{
+          background: '#fff',
+          padding: '24px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          border: '1px solid #e9ecef'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h3 style={{ margin: '0 0 8px 0', color: '#6c757d', fontSize: '14px', fontWeight: '500' }}>
+                Tổng doanh thu
+              </h3>
+              <p style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#28a745' }}>
+                {formatCurrency(stats.overview?.totalRevenue)}
+              </p>
+            </div>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px'
+            }}>
+              💰
             </div>
           </div>
         </div>
@@ -360,4 +359,4 @@ const RevenueBarChart = () => {
   );
 };
 
-export default RevenueBarChart;
+export default AdminStats;
