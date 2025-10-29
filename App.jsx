@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import AuthForm from './AuthForm'
 import ProductList from './ProductList'
 import ProductDetail from './ProductDetail'
@@ -106,7 +106,11 @@ const styles = {
     border: '2px solid #fff'
   },
   mainContainer: {
-    background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+    background: 'linear-gradient(135deg, rgba(245, 247, 250, 0.9) 0%, rgba(195, 207, 226, 0.9) 100%), url("http://localhost:5000/uploads/Copilot_20251018_163954.png")',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundAttachment: 'fixed',
     minHeight: '100vh',
     paddingBottom: '20px'
   },
@@ -164,6 +168,10 @@ function App() {
   const [showOrderHistory, setShowOrderHistory] = useState(false)
   const [orderData, setOrderData] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [showWelcomeNotice, setShowWelcomeNotice] = useState(false)
+  const [homeNotifications, setHomeNotifications] = useState([])
+  const [homeNotifLoading, setHomeNotifLoading] = useState(false)
+  const [homeNotifError, setHomeNotifError] = useState('')
   
   // Toast management
   const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast()
@@ -231,7 +239,7 @@ function App() {
     }
   }, [cart])
 
-  // Memoized functions
+  // Handlers
   const handleSearch = useCallback((value) => {
     setSearch(value)
   }, [])
@@ -441,6 +449,20 @@ function App() {
 
         <ButtonWithHover 
           onClick={() => {
+            setShowWelcomeNotice(prev => {
+              const next = !prev
+              if (next && user) fetchHomeNotifications()
+              return next
+            })
+          }}
+          style={styles.navButton}
+          title="Thông báo chào mừng"
+        >
+          🔔 Thông báo
+        </ButtonWithHover>
+
+        <ButtonWithHover 
+          onClick={() => {
             if (!user) {
               showError('Vui lòng đăng nhập để xem giỏ hàng!')
               setShowAuth(true)
@@ -493,9 +515,130 @@ function App() {
     </nav>
   ), [search, cart.length, user, handleSearch, handleGoHome, showError])
 
+  // Tự động hiện thông báo khi vào trang (chưa đăng nhập)
+  useEffect(() => {
+    setShowWelcomeNotice(true)
+    const timer = setTimeout(() => setShowWelcomeNotice(false), 8000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Tự động hiện thông báo mỗi khi trạng thái đăng nhập thay đổi (đăng nhập/đăng xuất)
+  useEffect(() => {
+    // Chỉ bật lại khi có sự thay đổi user
+    setShowWelcomeNotice(true)
+    const timer = setTimeout(() => setShowWelcomeNotice(false), 6000)
+    return () => clearTimeout(timer)
+  }, [user])
+
+  // API_BASE đã được khai báo phía trên
+  const fetchHomeNotifications = useCallback(async () => {
+    if (!user) return
+    try {
+      setHomeNotifLoading(true)
+      setHomeNotifError('')
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_BASE}/api/notifications/user`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setHomeNotifications(Array.isArray(data.data.notifications) ? data.data.notifications : [])
+      } else {
+        setHomeNotifError(data?.message || 'Không tải được thông báo')
+      }
+    } catch (e) {
+      setHomeNotifError('Lỗi kết nối máy chủ')
+    } finally {
+      setHomeNotifLoading(false)
+    }
+  }, [user])
+
+  // Tải ngay sau khi đăng nhập và cập nhật định kỳ
+  useEffect(() => {
+    if (!user) return
+    fetchHomeNotifications()
+    const intervalId = setInterval(() => {
+      fetchHomeNotifications()
+    }, 60000)
+    return () => clearInterval(intervalId)
+  }, [user, fetchHomeNotifications])
+
   // Content wrapper component
   const ContentWrapper = useCallback(() => (
     <div style={styles.contentWrapper}>
+      {showWelcomeNotice && (
+        <div style={{
+          position: 'fixed',
+          top: 80,
+          right: 20,
+          zIndex: 1500,
+          width: 360,
+          background: '#fff',
+          border: '1px solid #e5e7eb',
+          borderRadius: 12,
+          boxShadow: '0 12px 30px rgba(0,0,0,0.12)',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ fontWeight: 700 }}>Thông báo</div>
+            <button
+              onClick={() => setShowWelcomeNotice(false)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: '#fff',
+                borderRadius: 8,
+                padding: '4px 8px',
+                cursor: 'pointer'
+              }}
+            >
+              Đóng
+            </button>
+          </div>
+          <div style={{ padding: 16, color: '#374151', fontSize: 14, lineHeight: 1.5 }}>
+            {!user ? (
+              <>
+                Chào mừng bạn đã đến với GadgetPhone của chúng tôi. Bạn có thể đăng kí hoặc đăng nhập vào để sử dụng dịch vụ của chúng tôi.
+              </>
+            ) : (
+              <>
+                {/* Danh sách thông báo từ admin */}
+                {homeNotifLoading ? (
+                  <div>Đang tải thông báo...</div>
+                ) : homeNotifError ? (
+                  <div style={{ color: '#dc2626' }}>{homeNotifError}</div>
+                ) : homeNotifications.length === 0 ? (
+                  <div>Hiện chưa có thông báo mới.</div>
+                ) : (
+                  <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {homeNotifications.slice(0, 6).map(notif => (
+                      <div key={notif._id} style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 8,
+                        padding: '8px 10px',
+                        background: '#f9fafb'
+                      }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 4 }}>{notif.title}</div>
+                        <div style={{ fontSize: 13, color: '#4b5563' }}>{notif.message}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                          {new Date(notif.createdAt).toLocaleString('vi-VN')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {showViewOrder ? (
         <ViewOrder 
           orderData={orderData}
@@ -552,6 +695,7 @@ function App() {
       )}
     </div>
   ), [
+    showWelcomeNotice,
     showViewOrder, showVNPay, showCheckout, showCart, showWishlist, showOrderHistory, showProductDetail, 
     cart, user, selectedProductId, search, orderData, refreshKey,
     handleBackFromViewOrder, handleContinueShopping,
