@@ -192,11 +192,25 @@ const styles = {
     transition: 'all 0.3s ease',
     boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)',
     flex: 1
+  },
+  paymentButton: {
+    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '12px 24px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+    flex: 1
   }
 }
 
 function ViewOrder({ orderData, onBack, onContinueShopping }) {
   const [order, setOrder] = useState(null)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
 
   // Generate order data if not provided
   useEffect(() => {
@@ -248,6 +262,47 @@ function ViewOrder({ orderData, onBack, onContinueShopping }) {
     if (!order) return 0
     return order.items.reduce((total, item) => total + (item.price * item.quantity), 0)
   }, [order])
+
+  // Function to handle payment for VNPay orders
+  const handlePayment = async () => {
+    if (!order || order.paymentMethod !== 'vnpay' || order.paymentStatus === 'paid') {
+      return
+    }
+
+    setIsProcessingPayment(true)
+    
+      try {
+        const token = localStorage.getItem('token')
+        
+        // Tạo payment URL từ VNPay
+        const response = await fetch(`http://localhost:5000/api/payment/vnpay/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            orderId: order.orderId,
+            amount: order.total || order.items.reduce((total, item) => total + (item.price * item.quantity), 0),
+            orderDescription: `Thanh toán đơn hàng ${order.orderId}`
+          })
+        })
+
+        const result = await response.json()
+
+        if (result.success && result.paymentUrl) {
+          // Chuyển hướng đến trang thanh toán VNPay
+          window.location.href = result.paymentUrl
+        } else {
+          alert('Có lỗi xảy ra khi tạo link thanh toán: ' + (result.error || 'Lỗi không xác định'))
+        }
+      } catch (error) {
+        console.error('Payment error:', error)
+        alert('Có lỗi xảy ra khi tạo link thanh toán. Vui lòng thử lại.')
+      } finally {
+        setIsProcessingPayment(false)
+      }
+  }
 
   // Component cho nút với hover effects
   const ButtonWithHover = ({ children, style, onClick, disabled = false, ...props }) => (
@@ -363,7 +418,26 @@ function ViewOrder({ orderData, onBack, onContinueShopping }) {
             
             <div style={styles.infoRow}>
               <span style={styles.infoLabel}>Phương thức thanh toán:</span>
-              <span style={styles.infoValue}>{order.paymentMethod}</span>
+              <span style={styles.infoValue}>
+                {order.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng (COD)' : 'Thanh toán qua VNPay'}
+              </span>
+            </div>
+            
+            <div style={styles.infoRow}>
+              <span style={styles.infoLabel}>Trạng thái thanh toán:</span>
+              <span style={{
+                ...styles.statusBadge,
+                background: order.paymentStatus === 'paid' 
+                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                  : order.paymentStatus === 'pending'
+                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                  : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+              }}>
+                {order.paymentStatus === 'paid' ? 'Đã thanh toán' : 
+                 order.paymentStatus === 'pending' ? 'Chưa thanh toán' : 
+                 order.paymentStatus === 'failed' ? 'Thanh toán thất bại' :
+                 order.paymentStatus === 'cancelled' ? 'Đã hủy' : 'Hoàn tiền'}
+              </span>
             </div>
           </div>
 
@@ -403,6 +477,17 @@ function ViewOrder({ orderData, onBack, onContinueShopping }) {
 
           {/* Action Buttons */}
           <div style={styles.actionButtons}>
+            {/* Payment Button for VNPay orders with pending payment */}
+            {order.paymentMethod === 'vnpay' && order.paymentStatus === 'pending' && (
+              <ButtonWithHover
+                onClick={handlePayment}
+                style={styles.paymentButton}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? '⏳ Đang xử lý...' : '💳 Thanh toán ngay'}
+              </ButtonWithHover>
+            )}
+            
             <ButtonWithHover
               onClick={onContinueShopping}
               style={styles.primaryButton}
