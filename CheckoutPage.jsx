@@ -344,7 +344,8 @@ function CheckoutPage({ cart, user, onBack, onClearCart, onClearCartSilent, onVi
               phone: formData.phone,
               address: formData.address
             },
-            paymentMethod: formData.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản ngân hàng',
+            paymentMethod: formData.paymentMethod,
+            paymentStatus: result.data.paymentStatus || 'pending',
             items: cart.map(item => ({
               id: item.id,
               name: item.name,
@@ -369,7 +370,8 @@ function CheckoutPage({ cart, user, onBack, onClearCart, onClearCartSilent, onVi
                 phone: formData.phone,
                 address: formData.address
               },
-              paymentMethod: 'Thanh toán qua VNPay',
+              paymentMethod: formData.paymentMethod,
+              paymentStatus: result.data.paymentStatus || 'pending',
               items: cart.map(item => ({
                 id: item.id,
                 name: item.name,

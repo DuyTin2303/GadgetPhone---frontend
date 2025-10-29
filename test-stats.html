@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stats API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Stats API</h1>
+        
+        <div class="test-section">
+            <h3>1. Kiểm tra kết nối Backend</h3>
+            <button onclick="testBackendConnection()">Test Backend</button>
+            <div id="backend-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Authentication</h3>
+            <input type="text" id="token-input" placeholder="Nhập JWT token admin">
+            <button onclick="testAuth()">Test Auth</button>
+            <div id="auth-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test Stats API</h3>
+            <button onclick="testStatsAPI()">Test Overview Stats</button>
+            <button onclick="testAllStats()">Test All Stats</button>
+            <div id="stats-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Debug Info</h3>
+            <div id="debug-info"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:5000/api';
+        
+        function showResult(elementId, message, type = 'loading') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<pre>${message}</pre>`;
+            element.className = `test-section ${type}`;
+        }
+
+        async function testBackendConnection() {
+            showResult('backend-result', 'Đang kiểm tra kết nối backend...', 'loading');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.status === 401) {
+                    showResult('backend-result', '✅ Backend đang chạy (401 Unauthorized - bình thường)', 'success');
+                } else if (response.ok) {
+                    showResult('backend-result', '✅ Backend đang chạy và phản hồi', 'success');
+                } else {
+                    showResult('backend-result', `⚠️ Backend phản hồi với status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('backend-result', `❌ Không thể kết nối backend: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuth() {
+            const token = document.getElementById('token-input').value;
+            
+            if (!token) {
+                showResult('auth-result', '❌ Vui lòng nhập JWT token', 'error');
+                return;
+            }
+
+            showResult('auth-result', 'Đang kiểm tra authentication...', 'loading');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/stats/overview`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('auth-result', `✅ Authentication thành công!\n\nResponse: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else if (response.status === 401) {
+                    showResult('auth-result', '❌ Token không hợp lệ hoặc đã hết hạn', 'error');
+                } else if (response.status === 403) {
+                    showResult('auth-result', '❌ Không có quyền admin', 'error');
+                } else {
+                    const errorData = await response.json();
+                    showResult('auth-result', `❌ Lỗi ${response.status}: ${JSON.stringify(errorData, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('auth-result', `❌ Lỗi kết nối: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStatsAPI() {
+            const token = document.getElementById('token-input').value;
+            
+            if (!token) {
+                showResult('stats-result', '❌ Vui lòng nhập JWT token trước', 'error');
+                return;
+            }
+
+            showResult('stats-result', 'Đang test Stats API...', 'loading');
+            
+            try {
+                const response = await fetch(`${BASE_URL}/stats/overview`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('stats-result', `✅ Stats API hoạt động!\n\nData: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    const errorData = await response.json();
+                    showResult('stats-result', `❌ Lỗi Stats API: ${JSON.stringify(errorData, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult('stats-result', `❌ Lỗi: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllStats() {
+            const token = document.getElementById('token-input').value;
+            
+            if (!token) {
+                showResult('stats-result', '❌ Vui lòng nhập JWT token trước', 'error');
+                return;
+            }
+
+            showResult('stats-result', 'Đang test tất cả Stats APIs...', 'loading');
+            
+            const endpoints = [
+                '/stats/overview',
+                '/stats/revenue',
+                '/stats/orders',
+                '/stats/top-products',
+                '/stats/users',
+                '/stats/categories',
+                '/stats/payments'
+            ];
+            
+            const results = [];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`${BASE_URL}${endpoint}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        results.push(`✅ ${endpoint}: OK`);
+                    } else {
+                        results.push(`❌ ${endpoint}: ${response.status}`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${endpoint}: ${error.message}`);
+                }
+            }
+            
+            showResult('stats-result', results.join('\n'), 'success');
+        }
+
+        // Auto test backend connection on load
+        window.onload = function() {
+            testBackendConnection();
+            
+            // Check if there's a token in localStorage
+            const savedToken = localStorage.getItem('token');
+            if (savedToken) {
+                document.getElementById('token-input').value = savedToken;
+            }
+            
+            // Update debug info
+            document.getElementById('debug-info').innerHTML = `
+                <h4>Debug Information:</h4>
+                <pre>
+Current URL: ${window.location.href}
+Backend URL: ${BASE_URL}
+Local Storage Token: ${savedToken ? 'Found' : 'Not found'}
+User Agent: ${navigator.userAgent}
+                </pre>
+            `;
+        };
+    </script>
+</body>
+</html>

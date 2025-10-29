@@ -115,6 +115,53 @@ const AdminOrderManagement = () => {
     }
   };
 
+  // Cancel order (admin)
+  const cancelOrder = async (orderId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này? Hành động này không thể hoàn tác.')) {
+      return;
+    }
+
+    try {
+      setUpdatingStatus(orderId);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Update local state
+        setOrders(prev => prev.map(order => 
+          order.orderId === orderId ? { ...order, status: 'cancelled', paymentStatus: 'cancelled', updatedAt: new Date().toISOString() } : order
+        ));
+        
+        // Update filtered orders
+        setFilteredOrders(prev => prev.map(order => 
+          order.orderId === orderId ? { ...order, status: 'cancelled', paymentStatus: 'cancelled', updatedAt: new Date().toISOString() } : order
+        ));
+
+        // Update selected order if it's the same
+        if (selectedOrder && selectedOrder.orderId === orderId) {
+          setSelectedOrder(prev => ({ ...prev, status: 'cancelled', paymentStatus: 'cancelled', updatedAt: new Date().toISOString() }));
+        }
+
+        alert('Đã hủy đơn hàng thành công!');
+      } else {
+        setError(data.error || 'Có lỗi xảy ra khi hủy đơn hàng');
+      }
+    } catch (err) {
+      setError('Không thể kết nối đến server');
+      console.error('Cancel order error:', err);
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -272,6 +319,18 @@ const AdminOrderManagement = () => {
                     <option value="delivered">✅ Đã giao</option>
                     <option value="cancelled">❌ Đã hủy</option>
                   </select>
+                  {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
+                    <button 
+                      onClick={() => cancelOrder(selectedOrder.orderId)}
+                      disabled={updatingStatus === selectedOrder.orderId}
+                      style={{
+                        ...styles.cancelButton,
+                        opacity: updatingStatus === selectedOrder.orderId ? 0.6 : 1
+                      }}
+                    >
+                      {updatingStatus === selectedOrder.orderId ? '⏳' : '❌'} Hủy đơn hàng
+                    </button>
+                  )}
                 </div>
               </div>
               <div style={styles.infoItem}>
@@ -515,6 +574,18 @@ const AdminOrderManagement = () => {
                     <span style={styles.totalAmountPreview}>
                       {formatCurrency(order.totalAmount)}
                     </span>
+                    {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                      <button 
+                        onClick={() => cancelOrder(order.orderId)}
+                        disabled={updatingStatus === order.orderId}
+                        style={{
+                          ...styles.cancelButton,
+                          opacity: updatingStatus === order.orderId ? 0.6 : 1
+                        }}
+                      >
+                        {updatingStatus === order.orderId ? '⏳' : '❌'} Hủy đơn
+                      </button>
+                    )}
                     <button 
                       onClick={() => fetchOrderDetail(order.orderId)}
                       style={styles.viewDetailButton}
@@ -815,7 +886,8 @@ const styles = {
   statusContainer: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px'
+    gap: '8px',
+    flexWrap: 'wrap'
   },
   statusBadge: {
     padding: '4px 12px',
@@ -856,6 +928,18 @@ const styles = {
     cursor: 'pointer',
     fontSize: '12px',
     transition: 'all 0.3s ease'
+  },
+  cancelButton: {
+    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    fontSize: '12px',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
   },
   pagination: {
     display: 'flex',

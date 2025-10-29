@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import RevenueBarChart from './RevenueBarChart';
 import AdminOrderManagement from './AdminOrderManagement';
+import AdminStats from './AdminStats';
 
 const menuItems = [
   { key: 'products', label: 'Quản lý sản phẩm' },
   { key: 'categories', label: 'Quản lý danh mục' },
   { key: 'users', label: 'Quản lý người dùng' },
   { key: 'orders', label: 'Quản lý đơn hàng' },
+  { key: 'stats', label: 'Thống kê hệ thống' },
   { key: 'revenue', label: 'Thống kê doanh thu' },
   { key: 'logout', label: 'Đăng xuất' }
 ];
@@ -2115,6 +2117,9 @@ function AdminDashboard({ onLogout }) {
 
       case 'orders':
         return <AdminOrderManagement />;
+
+      case 'stats':
+        return <AdminStats />;
 
       case 'revenue':
         return <RevenueBarChart />;
