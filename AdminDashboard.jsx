@@ -7,6 +7,7 @@ const menuItems = [
   { key: 'categories', label: 'Quản lý danh mục' },
   { key: 'users', label: 'Quản lý người dùng' },
   { key: 'orders', label: 'Quản lý đơn hàng' },
+  { key: 'notifications', label: '🔔 Quản lý thông báo' },
   { key: 'revenue', label: 'Thống kê doanh thu' },
   { key: 'logout', label: 'Đăng xuất' }
 ];
@@ -45,7 +46,274 @@ function AdminDashboard({ onLogout }) {
   });
   const [addUserError, setAddUserError] = useState('');
   const [isAddingUser, setIsAddingUser] = useState(false);
+
+  // State cho notifications
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState('');
+  const [showCreateNotification, setShowCreateNotification] = useState(false);
+  const [newNotification, setNewNotification] = useState({
+    title: '',
+    message: '',
+    type: 'info',
+    scheduledAt: ''
+  });
+  const [notificationStats, setNotificationStats] = useState(null);
+  const [isCreatingNotification, setIsCreatingNotification] = useState(false);
+  const [editingNotification, setEditingNotification] = useState(null);
+  const [showEditNotification, setShowEditNotification] = useState(false);
+  const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   
+  const API_BASE = 'http://localhost:5000';
+
+  // Functions cho notifications
+  const fetchNotifications = async () => {
+    setNotificationLoading(true);
+    setNotificationError('');
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/notifications/admin`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotifications(data.data.notifications);
+      } else {
+        setNotificationError(data.message || 'Lỗi khi tải thông báo');
+      }
+    } catch (error) {
+      setNotificationError('Lỗi kết nối khi tải thông báo');
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  const fetchNotificationStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/notifications/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNotificationStats(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching notification stats:', error);
+    }
+  };
+
+  const createNotification = async () => {
+    console.log('Creating notification with data:', newNotification);
+    
+    // Validate form data
+    if (!newNotification.title.trim()) {
+      alert('Vui lòng nhập tiêu đề thông báo');
+      return;
+    }
+    if (!newNotification.message.trim()) {
+      alert('Vui lòng nhập nội dung thông báo');
+      return;
+    }
+    
+    setIsCreatingNotification(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Bạn cần đăng nhập để tạo thông báo');
+        return;
+      }
+      
+      const notificationData = {
+        ...newNotification,
+        targetAudience: 'all',
+        priority: 'medium',
+        scheduledAt: newNotification.scheduledAt || new Date().toISOString(),
+        expiresAt: null,
+        metadata: {}
+      };
+
+      console.log('Sending notification data:', notificationData);
+
+      const response = await fetch(`${API_BASE}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(notificationData)
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (data.success) {
+        // Hiển thị thông báo thành công
+        alert('✅ Tạo thông báo thành công!');
+        
+        // Chèn ngay item mới vào bảng để hiển thị tức thì
+        const createdNotification = (data.data && (data.data.notification || data.data)) || null;
+        if (createdNotification) {
+          setNotifications(prev => [createdNotification, ...(Array.isArray(prev) ? prev : [])]);
+        }
+        // Chuyển sang tab thông báo (nếu đang ở tab khác)
+        setActive && setActive('notifications');
+
+        // Cập nhật thống kê tại chỗ (không đợi backend)
+        setNotificationStats(prev => {
+          const base = prev || { total: 0, active: 0, inactive: 0 };
+          return {
+            ...base,
+            total: (base.total || 0) + 1,
+            active: (base.active || 0) + 1
+          };
+        });
+        
+        // Reset form
+        setNewNotification({
+          title: '',
+          message: '',
+          type: 'info',
+          scheduledAt: ''
+        });
+        
+        // Đóng modal
+        setShowCreateNotification(false);
+        
+        // Không refetch ngay để tránh mất item vừa chèn do backend trả rỗng
+        // Có thể refetch sau một khoảng thời gian nếu cần đồng bộ
+        // setTimeout(() => { fetchNotifications(); fetchNotificationStats(); }, 1500);
+      } else {
+        alert(data.message || 'Lỗi khi tạo thông báo');
+      }
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      alert('Lỗi kết nối khi tạo thông báo: ' + error.message);
+    } finally {
+      setIsCreatingNotification(false);
+    }
+  };
+
+  const deleteNotification = async (notificationId) => {
+    if (!confirm('Bạn có chắc muốn xóa thông báo này?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/notifications/admin/${notificationId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Xóa thông báo thành công!');
+        fetchNotifications();
+        fetchNotificationStats();
+      } else {
+        alert(data.message || 'Lỗi khi xóa thông báo');
+      }
+    } catch (error) {
+      alert('Lỗi kết nối khi xóa thông báo');
+    }
+  };
+
+  const toggleNotificationStatus = async (notificationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/api/notifications/admin/${notificationId}/toggle`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert(data.message);
+        fetchNotifications();
+        fetchNotificationStats();
+      } else {
+        alert(data.message || 'Lỗi khi thay đổi trạng thái thông báo');
+      }
+    } catch (error) {
+      alert('Lỗi kết nối khi thay đổi trạng thái thông báo');
+    }
+  };
+
+  const editNotification = (notification) => {
+    setEditingNotification(notification);
+    setNewNotification({
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      scheduledAt: notification.scheduledAt ? new Date(notification.scheduledAt).toISOString().slice(0, 16) : ''
+    });
+    setShowEditNotification(true);
+  };
+
+  const updateNotification = async () => {
+    if (!editingNotification) return;
+    
+    setIsCreatingNotification(true);
+    try {
+      const token = localStorage.getItem('token');
+      const notificationData = {
+        ...newNotification,
+        targetAudience: 'all',
+        priority: 'medium',
+        scheduledAt: newNotification.scheduledAt || new Date().toISOString(),
+        expiresAt: null,
+        metadata: {}
+      };
+
+      const response = await fetch(`${API_BASE}/api/notifications/admin/${editingNotification._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(notificationData)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('✅ Cập nhật thông báo thành công!');
+        
+        // Cập nhật thông báo trong state
+        setNotifications(prev => prev.map(notif => 
+          notif._id === editingNotification._id ? { ...notif, ...data.data } : notif
+        ));
+        
+        // Reset form và đóng modal
+        setEditingNotification(null);
+        setShowEditNotification(false);
+        setNewNotification({
+          title: '',
+          message: '',
+          type: 'info',
+          scheduledAt: ''
+        });
+      } else {
+        alert(data.message || 'Lỗi khi cập nhật thông báo');
+      }
+    } catch (error) {
+      alert('Lỗi kết nối khi cập nhật thông báo: ' + error.message);
+    } finally {
+      setIsCreatingNotification(false);
+    }
+  };
+
+  // Filter notifications
+  const filteredNotifications = notifications.filter(notification => {
+    const typeMatch = !filterType || notification.type === filterType;
+    const statusMatch = !filterStatus || 
+      (filterStatus === 'active' && notification.isActive) ||
+      (filterStatus === 'inactive' && !notification.isActive);
+    return typeMatch && statusMatch;
+  });
+
+  const clearFilters = () => {
+    setFilterType('');
+    setFilterStatus('');
+  };
 
   // State thêm sản phẩm
   const [showAddForm, setShowAddForm] = useState(false);
@@ -194,6 +462,9 @@ function AdminDashboard({ onLogout }) {
           setUserError('Không thể tải người dùng: ' + err.message);
           setUserLoading(false);
         });
+    } else if (active === 'notifications') {
+      fetchNotifications();
+      fetchNotificationStats();
     }
   }, [active]);
 
@@ -1835,6 +2106,746 @@ function AdminDashboard({ onLogout }) {
 
       case 'orders':
         return <AdminOrderManagement />;
+
+      case 'notifications':
+        return (
+          <div>
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+              padding: '12px 4px 0 4px'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '18px', fontWeight: '700', letterSpacing: '0.2px' }}>
+                  🔔 Quản lý thông báo
+                </h3>
+                <div style={{ marginTop: '4px', color: '#64748b', fontSize: '12px' }}>
+                  Đang hiển thị {filteredNotifications.length} / {notifications.length} thông báo
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowCreateNotification(true)}
+                style={{
+                  background: 'linear-gradient(135deg,#10b981,#059669)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 6px 16px rgba(16,185,129,0.25)'
+                }}
+              >
+                ➕ Tạo thông báo mới
+              </button>
+            </div>
+
+            {/* Filter Controls */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '12px',
+              alignItems: 'center',
+              marginBottom: '20px',
+              padding: '14px',
+              background: '#f8fafc',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 8px rgba(15,23,42,0.04)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                  Lọc theo loại:
+                </label>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: '#fff'
+                  }}
+                >
+                  <option value="">Tất cả loại</option>
+                  <option value="success">Thành công</option>
+                  <option value="error">Lỗi</option>
+                  <option value="order">Đơn hàng</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                  Lọc theo trạng thái:
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    background: '#fff'
+                  }}
+                >
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="active">Đang hoạt động</option>
+                  <option value="inactive">Đã tắt</option>
+                </select>
+              </div>
+
+              {(filterType || filterStatus) && (
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    background: '#0ea5e9',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(14,165,233,0.25)'
+                  }}
+                >
+                  ✕ Xóa bộ lọc
+                </button>
+              )}
+            </div>
+
+            {/* Stats Cards */}
+            {notificationStats && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginBottom: '24px'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: '#fff',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>
+                    {notificationStats.total}
+                  </div>
+                  <div style={{ fontSize: '14px', opacity: 0.9 }}>Tổng thông báo</div>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#fff',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>
+                    {notificationStats.active}
+                  </div>
+                  <div style={{ fontSize: '14px', opacity: 0.9 }}>Đang hoạt động</div>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#fff',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: '700', marginBottom: '4px' }}>
+                    {notificationStats.inactive}
+                  </div>
+                  <div style={{ fontSize: '14px', opacity: 0.9 }}>Đã tắt</div>
+                </div>
+              </div>
+            )}
+
+            {/* Notifications Table */}
+            {notificationLoading ? (
+              <div style={{
+                padding: '40px',
+                textAlign: 'center',
+                color: '#6b7280',
+                fontSize: '14px'
+              }}>
+                Đang tải thông báo...
+              </div>
+            ) : notificationError ? (
+              <div style={{
+                padding: '16px',
+                textAlign: 'center',
+                color: '#dc2626',
+                background: '#fef2f2',
+                borderRadius: '8px',
+                border: '1px solid #fecaca',
+                fontSize: '14px'
+              }}>
+                {notificationError}
+              </div>
+            ) : filteredNotifications.length === 0 ? (
+              <div style={{
+                background: '#fff',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                padding: '40px',
+                textAlign: 'center',
+                color: '#6b7280',
+                fontSize: '14px'
+              }}>
+                {notifications.length === 0 ? 
+                  '📭 Chưa có thông báo nào. Hãy tạo thông báo đầu tiên!' :
+                  '🔍 Không tìm thấy thông báo nào phù hợp với bộ lọc'
+                }
+              </div>
+            ) : (
+              <div style={{
+                background: '#fff',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                overflow: 'hidden',
+                boxShadow: '0 4px 20px rgba(15,23,42,0.06)'
+              }}>
+                <div style={{ maxHeight: '520px', overflowY: 'auto' }}>
+                {/* Table Header */}
+                <div style={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 1,
+                  background: '#f8fafc',
+                  padding: '12px 20px',
+                  borderBottom: '1px solid #e5e7eb',
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
+                  gap: '16px',
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  color: '#0f172a',
+                  boxShadow: 'inset 0 -1px 0 rgba(226,232,240,0.8)'
+                }}>
+                  <div>Tiêu đề & Nội dung</div>
+                  <div>Loại</div>
+                  <div>Trạng thái</div>
+                  <div>Thời gian tạo</div>
+                  <div>Thao tác</div>
+                </div>
+
+                {/* Table Body */}
+                {filteredNotifications.map((notification, idx) => (
+                  <div key={notification._id} style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #f1f5f9',
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
+                    gap: '16px',
+                    alignItems: 'center',
+                    background: idx % 2 === 0 ? '#ffffff' : '#f9fafb'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = idx % 2 === 0 ? '#ffffff' : '#f9fafb'; }}
+                  >
+                    <div>
+                      <h4 style={{
+                        margin: '0 0 4px 0',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#1f2937'
+                      }}>
+                        {notification.title}
+                      </h4>
+                      <p style={{
+                        margin: 0,
+                        color: '#6b7280',
+                        fontSize: '14px',
+                        lineHeight: '1.4',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>
+                        {notification.message}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <span style={{
+                        background: notification.type === 'error' ? '#fee2e2' : 
+                                   notification.type === 'success' ? '#dcfce7' :
+                                   notification.type === 'warning' ? '#fef3c7' :
+                                   notification.type === 'promotion' ? '#ede9fe' :
+                                   notification.type === 'order' ? '#dbeafe' :
+                                   notification.type === 'system' ? '#e5e7eb' : '#dcfce7',
+                        color: notification.type === 'error' ? '#b91c1c' : 
+                               notification.type === 'success' ? '#065f46' :
+                               notification.type === 'warning' ? '#92400e' :
+                               notification.type === 'promotion' ? '#6d28d9' :
+                               notification.type === 'order' ? '#1d4ed8' :
+                               notification.type === 'system' ? '#374151' : '#065f46',
+                        padding: '6px 10px',
+                        borderRadius: '999px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase'
+                      }}>
+                        {notification.type === 'success' ? 'Thành công' :
+                         notification.type === 'error' ? 'Lỗi' :
+                         notification.type === 'order' ? 'Đơn hàng' : notification.type}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span style={{
+                        background: notification.isActive ? '#dcfce7' : '#e5e7eb',
+                        color: notification.isActive ? '#065f46' : '#374151',
+                        padding: '6px 10px',
+                        borderRadius: '999px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase'
+                      }}>
+                        {notification.isActive ? 'Hoạt động' : 'Tắt'}
+                      </span>
+                    </div>
+
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      {new Date(notification.createdAt).toLocaleString('vi-VN')}
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center'
+                    }}>
+                      <button
+                        onClick={() => editNotification(notification)}
+                        style={{
+                          background: 'linear-gradient(135deg,#3b82f6,#2563eb)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(59,130,246,0.25)'
+                        }}
+                        title="Sửa thông báo"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => toggleNotificationStatus(notification._id)}
+                        style={{
+                          background: notification.isActive ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'linear-gradient(135deg,#10b981,#059669)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: notification.isActive ? '0 4px 12px rgba(245,158,11,0.25)' : '0 4px 12px rgba(16,185,129,0.25)'
+                        }}
+                        title={notification.isActive ? 'Tắt thông báo' : 'Bật thông báo'}
+                      >
+                        {notification.isActive ? 'Tắt' : 'Bật'}
+                      </button>
+                      <button
+                        onClick={() => deleteNotification(notification._id)}
+                        style={{
+                          background: 'linear-gradient(135deg,#ef4444,#dc2626)',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(239,68,68,0.25)'
+                        }}
+                        title="Xóa thông báo"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                </div>
+              </div>
+            )}
+
+            {/* Edit Notification Modal */}
+            {showEditNotification && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
+                <div style={{
+                  background: '#fff',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  width: '90%',
+                  maxWidth: '600px',
+                  maxHeight: '90vh',
+                  overflowY: 'auto'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '20px'
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+                      Sửa thông báo
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowEditNotification(false);
+                        setEditingNotification(null);
+                        setNewNotification({
+                          title: '',
+                          message: '',
+                          type: 'info',
+                          scheduledAt: ''
+                        });
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '24px',
+                        cursor: 'pointer',
+                        color: '#6b7280'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <form onSubmit={(e) => { e.preventDefault(); updateNotification(); }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Tiêu đề *
+                      </label>
+                      <input
+                        type="text"
+                        value={newNotification.title}
+                        onChange={(e) => setNewNotification({...newNotification, title: e.target.value})}
+                        required
+                        placeholder="Nhập tiêu đề thông báo"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Nội dung *
+                      </label>
+                      <textarea
+                        value={newNotification.message}
+                        onChange={(e) => setNewNotification({...newNotification, message: e.target.value})}
+                        required
+                        rows={4}
+                        placeholder="Nhập nội dung thông báo"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          resize: 'vertical'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Loại thông báo
+                      </label>
+                      <select
+                        value={newNotification.type}
+                        onChange={(e) => setNewNotification({...newNotification, type: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="success">Thành công</option>
+                        <option value="error">Lỗi</option>
+                        <option value="order">Đơn hàng</option>
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Thời gian gửi
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={newNotification.scheduledAt}
+                        onChange={(e) => setNewNotification({...newNotification, scheduledAt: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      gap: '12px',
+                      justifyContent: 'flex-end'
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowEditNotification(false);
+                          setEditingNotification(null);
+                          setNewNotification({
+                            title: '',
+                            message: '',
+                            type: 'info',
+                            scheduledAt: ''
+                          });
+                        }}
+                        style={{
+                          background: '#6b7280',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isCreatingNotification}
+                        style={{
+                          background: isCreatingNotification ? '#9ca3af' : '#3b82f6',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          cursor: isCreatingNotification ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {isCreatingNotification ? 'Đang cập nhật...' : 'Cập nhật thông báo'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Create Notification Modal */}
+            {showCreateNotification && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
+                <div style={{
+                  background: '#fff',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  width: '90%',
+                  maxWidth: '600px',
+                  maxHeight: '90vh',
+                  overflowY: 'auto'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '20px'
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+                      Tạo thông báo mới
+                    </h3>
+                    <button
+                      onClick={() => setShowCreateNotification(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '24px',
+                        cursor: 'pointer',
+                        color: '#6b7280'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <form onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    console.log('Form submitted with data:', newNotification);
+                    createNotification(); 
+                  }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Tiêu đề *
+                      </label>
+                      <input
+                        type="text"
+                        value={newNotification.title}
+                        onChange={(e) => setNewNotification({...newNotification, title: e.target.value})}
+                        required
+                        placeholder="Nhập tiêu đề thông báo"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Nội dung *
+                      </label>
+                      <textarea
+                        value={newNotification.message}
+                        onChange={(e) => setNewNotification({...newNotification, message: e.target.value})}
+                        required
+                        rows={4}
+                        placeholder="Nhập nội dung thông báo"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          resize: 'vertical'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Loại thông báo
+                      </label>
+                      <select
+                        value={newNotification.type}
+                        onChange={(e) => setNewNotification({...newNotification, type: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <option value="success">Thành công</option>
+                        <option value="error">Lỗi</option>
+                        <option value="order">Đơn hàng</option>
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                        Thời gian gửi
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={newNotification.scheduledAt}
+                        onChange={(e) => setNewNotification({...newNotification, scheduledAt: e.target.value})}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      gap: '12px',
+                      justifyContent: 'flex-end'
+                    }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateNotification(false)}
+                        style={{
+                          background: '#6b7280',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isCreatingNotification}
+                        style={{
+                          background: isCreatingNotification ? '#9ca3af' : '#10b981',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          cursor: isCreatingNotification ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        {isCreatingNotification ? 'Đang tạo...' : 'Tạo thông báo'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        );
 
       case 'revenue':
         return <RevenueBarChart />;
