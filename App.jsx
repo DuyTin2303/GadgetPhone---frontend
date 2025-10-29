@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import AuthForm from './AuthForm'
 import ProductList from './ProductList'
 import ProductDetail from './ProductDetail'
@@ -78,13 +78,16 @@ const styles = {
     border: '1px solid rgba(255,255,255,0.3)',
     color: '#fff',
     borderRadius: 15,
-    padding: '6px 16px',
+    padding: '8px 12px',
     fontWeight: 600,
-    fontSize: 12,
+    fontSize: 13,
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     backdropFilter: 'blur(10px)',
-    position: 'relative'
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
   },
   cartBadge: {
     position: 'absolute',
@@ -103,7 +106,11 @@ const styles = {
     border: '2px solid #fff'
   },
   mainContainer: {
-    background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+    background: 'linear-gradient(135deg, rgba(245, 247, 250, 0.9) 0%, rgba(195, 207, 226, 0.9) 100%), url("http://localhost:5000/uploads/Copilot_20251018_163954.png")',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundAttachment: 'fixed',
     minHeight: '100vh',
     paddingBottom: '20px'
   },
@@ -161,6 +168,10 @@ function App() {
   const [showOrderHistory, setShowOrderHistory] = useState(false)
   const [orderData, setOrderData] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [showWelcomeNotice, setShowWelcomeNotice] = useState(false)
+  const [homeNotifications, setHomeNotifications] = useState([])
+  const [homeNotifLoading, setHomeNotifLoading] = useState(false)
+  const [homeNotifError, setHomeNotifError] = useState('')
   
   // Toast management
   const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast()
@@ -205,6 +216,20 @@ function App() {
     }
   }, [user])
 
+  // Refs cho các input để tránh controlled component issues
+  const usernameRef = useRef(null)
+  const emailRef = useRef(null)
+  const addressRef = useRef(null)
+  const phoneRef = useRef(null)
+
+  // Sync refs với editData khi cần
+  useEffect(() => {
+    if (usernameRef.current) usernameRef.current.value = editData.username
+    if (emailRef.current) emailRef.current.value = editData.email
+    if (addressRef.current) addressRef.current.value = editData.address
+    if (phoneRef.current) phoneRef.current.value = editData.phone
+  }, [editData])
+
   // Lưu cart vào localStorage mỗi khi cart thay đổi
   useEffect(() => {
     try {
@@ -214,7 +239,7 @@ function App() {
     }
   }, [cart])
 
-  // Memoized functions
+  // Handlers
   const handleSearch = useCallback((value) => {
     setSearch(value)
   }, [])
@@ -266,6 +291,7 @@ function App() {
     }
     setShowCart(true) // Chuyển sang trang Cart
   }, [cart, buildImageUrl, user, showError])
+
 
   const handleRemoveFromCart = useCallback((index) => {
     const removedItem = cart[index]
@@ -377,34 +403,18 @@ function App() {
     setOrderData(null)
   }, [])
 
-  // Component cho button với hover effects
+  // Component cho button với hover effects đơn giản
   const ButtonWithHover = ({ children, style, onClick, ...props }) => (
     <button
       style={style}
       onClick={onClick}
       onMouseEnter={(e) => {
-        if (style.background?.includes('rgba(255,255,255,0.2)')) {
-          e.target.style.background = 'rgba(255,255,255,0.3)'
-          e.target.style.borderColor = 'rgba(255,255,255,0.5)'
-        }
-        if (style.transform) {
-          e.target.style.transform = 'translateY(-2px)'
-        } else if (style.fontSize === 20) {
-          e.target.style.transform = 'scale(1.05)'
-          e.target.style.textShadow = '0 4px 8px rgba(0,0,0,0.4)'
-        }
+        e.target.style.opacity = '0.8'
+        e.target.style.transform = 'scale(1.05)'
       }}
       onMouseLeave={(e) => {
-        if (style.background?.includes('rgba(255,255,255,0.2)')) {
-          e.target.style.background = 'rgba(255,255,255,0.2)'
-          e.target.style.borderColor = 'rgba(255,255,255,0.3)'
-        }
-        if (style.transform) {
-          e.target.style.transform = 'translateY(0)'
-        } else if (style.fontSize === 20) {
-          e.target.style.transform = 'scale(1)'
-          e.target.style.textShadow = '0 2px 4px rgba(0,0,0,0.3)'
-        }
+        e.target.style.opacity = '1'
+        e.target.style.transform = 'scale(1)'
       }}
       {...props}
     >
@@ -412,7 +422,7 @@ function App() {
     </button>
   )
 
-  // Navbar component
+  // Navbar component đơn giản
   const renderNavbar = useCallback((showLoginBtn = true, showProfileBtn = false) => (
     <nav style={styles.navbar}>
       <ButtonWithHover 
@@ -424,28 +434,33 @@ function App() {
       
       <div style={styles.searchContainer}>
         <div style={styles.searchWrapper}>
-        <input
-          type="text"
-            placeholder=" Tìm kiếm..."
-          value={search}
-          onChange={e => handleSearch(e.target.value)}
+          <input
+            type="text"
+            placeholder="Tìm kiếm sản phẩm..."
+            value={search}
+            onChange={e => handleSearch(e.target.value)}
             style={styles.searchInput}
-            onFocus={(e) => {
-              e.target.style.background = 'rgba(255,255,255,1)'
-              e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)'
-              e.target.style.transform = 'scale(1.02)'
-            }}
-            onBlur={(e) => {
-              e.target.style.background = 'rgba(255,255,255,0.9)'
-              e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)'
-              e.target.style.transform = 'scale(1)'
-            }}
           />
           <div style={styles.searchIcon}>🔍</div>
-      </div>
+        </div>
       </div>
       
       <div style={styles.navButtons}>
+
+        <ButtonWithHover 
+          onClick={() => {
+            setShowWelcomeNotice(prev => {
+              const next = !prev
+              if (next && user) fetchHomeNotifications()
+              return next
+            })
+          }}
+          style={styles.navButton}
+          title="Thông báo chào mừng"
+        >
+          🔔 Thông báo
+        </ButtonWithHover>
+
         <ButtonWithHover 
           onClick={() => {
             if (!user) {
@@ -456,8 +471,9 @@ function App() {
             setShowCart(true)
           }}
           style={styles.navButton}
+          title="Giỏ hàng"
         >
-          🛒
+          🛒 Giỏ hàng
           {cart.length > 0 && (
             <span style={styles.cartBadge}>
               {cart.length}
@@ -471,7 +487,7 @@ function App() {
             style={styles.navButton}
             title="Danh sách yêu thích"
           >
-            ❤️
+            ❤️ Yêu thích
           </ButtonWithHover>
         )}
         
@@ -479,8 +495,9 @@ function App() {
           <ButtonWithHover 
             onClick={() => setShowProfile(true)} 
             style={styles.navButton}
+            title="Hồ sơ cá nhân"
           >
-            👤
+            👤 Hồ sơ
           </ButtonWithHover>
         )}
         
@@ -488,8 +505,9 @@ function App() {
           <ButtonWithHover 
             onClick={() => setShowAuth(true)} 
             style={styles.navButton}
+            title="Đăng nhập"
           >
-            🔐
+            🔐 Đăng nhập
           </ButtonWithHover>
         )}
         
@@ -497,9 +515,130 @@ function App() {
     </nav>
   ), [search, cart.length, user, handleSearch, handleGoHome, showError])
 
+  // Tự động hiện thông báo khi vào trang (chưa đăng nhập)
+  useEffect(() => {
+    setShowWelcomeNotice(true)
+    const timer = setTimeout(() => setShowWelcomeNotice(false), 8000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Tự động hiện thông báo mỗi khi trạng thái đăng nhập thay đổi (đăng nhập/đăng xuất)
+  useEffect(() => {
+    // Chỉ bật lại khi có sự thay đổi user
+    setShowWelcomeNotice(true)
+    const timer = setTimeout(() => setShowWelcomeNotice(false), 6000)
+    return () => clearTimeout(timer)
+  }, [user])
+
+  // API_BASE đã được khai báo phía trên
+  const fetchHomeNotifications = useCallback(async () => {
+    if (!user) return
+    try {
+      setHomeNotifLoading(true)
+      setHomeNotifError('')
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_BASE}/api/notifications/user`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (data?.success) {
+        setHomeNotifications(Array.isArray(data.data.notifications) ? data.data.notifications : [])
+      } else {
+        setHomeNotifError(data?.message || 'Không tải được thông báo')
+      }
+    } catch (e) {
+      setHomeNotifError('Lỗi kết nối máy chủ')
+    } finally {
+      setHomeNotifLoading(false)
+    }
+  }, [user])
+
+  // Tải ngay sau khi đăng nhập và cập nhật định kỳ
+  useEffect(() => {
+    if (!user) return
+    fetchHomeNotifications()
+    const intervalId = setInterval(() => {
+      fetchHomeNotifications()
+    }, 60000)
+    return () => clearInterval(intervalId)
+  }, [user, fetchHomeNotifications])
+
   // Content wrapper component
   const ContentWrapper = useCallback(() => (
     <div style={styles.contentWrapper}>
+      {showWelcomeNotice && (
+        <div style={{
+          position: 'fixed',
+          top: 80,
+          right: 20,
+          zIndex: 1500,
+          width: 360,
+          background: '#fff',
+          border: '1px solid #e5e7eb',
+          borderRadius: 12,
+          boxShadow: '0 12px 30px rgba(0,0,0,0.12)',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div style={{ fontWeight: 700 }}>Thông báo</div>
+            <button
+              onClick={() => setShowWelcomeNotice(false)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: '#fff',
+                borderRadius: 8,
+                padding: '4px 8px',
+                cursor: 'pointer'
+              }}
+            >
+              Đóng
+            </button>
+          </div>
+          <div style={{ padding: 16, color: '#374151', fontSize: 14, lineHeight: 1.5 }}>
+            {!user ? (
+              <>
+                Chào mừng bạn đã đến với GadgetPhone của chúng tôi. Bạn có thể đăng kí hoặc đăng nhập vào để sử dụng dịch vụ của chúng tôi.
+              </>
+            ) : (
+              <>
+                {/* Danh sách thông báo từ admin */}
+                {homeNotifLoading ? (
+                  <div>Đang tải thông báo...</div>
+                ) : homeNotifError ? (
+                  <div style={{ color: '#dc2626' }}>{homeNotifError}</div>
+                ) : homeNotifications.length === 0 ? (
+                  <div>Hiện chưa có thông báo mới.</div>
+                ) : (
+                  <div style={{ maxHeight: 260, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {homeNotifications.slice(0, 6).map(notif => (
+                      <div key={notif._id} style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 8,
+                        padding: '8px 10px',
+                        background: '#f9fafb'
+                      }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: '#111827', marginBottom: 4 }}>{notif.title}</div>
+                        <div style={{ fontSize: 13, color: '#4b5563' }}>{notif.message}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                          {new Date(notif.createdAt).toLocaleString('vi-VN')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {showViewOrder ? (
         <ViewOrder 
           orderData={orderData}
@@ -552,10 +691,11 @@ function App() {
           user={user}
         />
       ) : (
-        <ProductList key={refreshKey} search={search} onViewDetail={handleViewProductDetail} />
+        <ProductList key={refreshKey} search={search} onViewDetail={handleViewProductDetail} user={user} />
       )}
     </div>
   ), [
+    showWelcomeNotice,
     showViewOrder, showVNPay, showCheckout, showCart, showWishlist, showOrderHistory, showProductDetail, 
     cart, user, selectedProductId, search, orderData, refreshKey,
     handleBackFromViewOrder, handleContinueShopping,
@@ -567,7 +707,7 @@ function App() {
     handleAddToCart, handleViewProductDetail
   ])
 
-  // Profile popup component
+  // Profile popup component - Đơn giản
   const ProfilePopup = useCallback(() => {
     if (!showProfile) return null
 
@@ -579,112 +719,98 @@ function App() {
         zIndex: 2000, 
         display: 'flex', 
         alignItems: 'center', 
-        justifyContent: 'center',
-        backdropFilter: 'blur(8px)'
+        justifyContent: 'center'
       }}>
         <div style={{ 
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', 
-          borderRadius: 24, 
-          boxShadow: '0 20px 40px rgba(0,0,0,0.15)', 
+          background: '#fff', 
+          borderRadius: 16, 
+          boxShadow: '0 10px 25px rgba(0,0,0,0.2)', 
           padding: 0, 
-          width: 450, 
-          maxHeight: '85vh', 
+          width: 400, 
+          maxHeight: '80vh', 
           overflowY: 'auto',
-          border: '1px solid rgba(255,255,255,0.2)',
           position: 'relative'
         }}>
-          {/* Header */}
+          {/* Header - Đơn giản */}
           <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            padding: '24px 32px',
-            borderRadius: '24px 24px 0 0',
+            background: '#667eea',
+            padding: '20px',
+            borderRadius: '16px 16px 0 0',
             textAlign: 'center',
             position: 'relative'
           }}>
             <div style={{
-              width: '80px',
-              height: '80px',
+              width: '60px',
+              height: '60px',
               background: 'rgba(255,255,255,0.2)',
               borderRadius: '50%',
-              margin: '0 auto 16px auto',
+              margin: '0 auto 12px auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '32px',
-              border: '3px solid rgba(255,255,255,0.3)',
-              backdropFilter: 'blur(10px)'
+              fontSize: '24px'
             }}>
               👤
             </div>
             <h3 style={{ 
               margin: 0, 
               color: '#fff', 
-              fontSize: '24px',
-              fontWeight: '700',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              fontSize: '20px',
+              fontWeight: '700'
             }}>
               Thông tin cá nhân
             </h3>
-            <div style={{
+            <button style={{
               position: 'absolute',
-              top: '16px',
-              right: '20px',
+              top: '12px',
+              right: '16px',
               background: 'rgba(255,255,255,0.2)',
               border: 'none',
               borderRadius: '50%',
-              width: '32px',
-              height: '32px',
+              width: '28px',
+              height: '28px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               color: '#fff',
-              fontSize: '18px',
-              transition: 'all 0.3s ease'
+              fontSize: '16px'
             }}
             onClick={() => setShowProfile(false)}
-            onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(255,255,255,0.3)'
-              e.target.style.transform = 'scale(1.1)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(255,255,255,0.2)'
-              e.target.style.transform = 'scale(1)'
-            }}
             >
               ✕
-            </div>
+            </button>
           </div>
 
-          {/* Content */}
-          <div style={{ padding: '32px' }}>
+          {/* Content - Đơn giản */}
+          <div style={{ padding: '24px' }}>
             {!editProfile ? (
               <>
-                {/* User Info Cards */}
-                <div style={{ marginBottom: '24px' }}>
+                {/* User Info - Đơn giản */}
+                <div style={{ marginBottom: '20px' }}>
                   <div style={{
-                    background: 'rgba(102, 126, 234, 0.1)',
-                    border: '1px solid rgba(102, 126, 234, 0.2)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    marginBottom: '16px'
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        borderRadius: '12px',
+                        width: '32px',
+                        height: '32px',
+                        background: '#667eea',
+                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#fff',
-                        fontSize: '18px'
+                        fontSize: '16px'
                       }}>
                         👤
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600' }}>
                           Tên đăng nhập
                         </div>
                         <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
@@ -695,28 +821,28 @@ function App() {
                   </div>
 
                   <div style={{
-                    background: 'rgba(16, 185, 129, 0.1)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    marginBottom: '16px'
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        borderRadius: '12px',
+                        width: '32px',
+                        height: '32px',
+                        background: '#10b981',
+                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#fff',
-                        fontSize: '18px'
+                        fontSize: '16px'
                       }}>
                         📧
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600' }}>
                           Email
                         </div>
                         <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
@@ -727,28 +853,28 @@ function App() {
                   </div>
 
                   <div style={{
-                    background: 'rgba(245, 158, 11, 0.1)',
-                    border: '1px solid rgba(245, 158, 11, 0.2)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    marginBottom: '16px'
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                        borderRadius: '12px',
+                        width: '32px',
+                        height: '32px',
+                        background: '#f59e0b',
+                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#fff',
-                        fontSize: '18px'
+                        fontSize: '16px'
                       }}>
                         📍
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600' }}>
                           Địa chỉ
                         </div>
                         <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
@@ -759,28 +885,28 @@ function App() {
                   </div>
 
                   <div style={{
-                    background: 'rgba(139, 92, 246, 0.1)',
-                    border: '1px solid rgba(139, 92, 246, 0.2)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    marginBottom: '16px'
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '12px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                        borderRadius: '12px',
+                        width: '32px',
+                        height: '32px',
+                        background: '#8b5cf6',
+                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#fff',
-                        fontSize: '18px'
+                        fontSize: '16px'
                       }}>
                         📱
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600' }}>
                           Số điện thoại
                         </div>
                         <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
@@ -791,28 +917,28 @@ function App() {
                   </div>
 
                   <div style={{
-                    background: 'rgba(236, 72, 153, 0.1)',
-                    border: '1px solid rgba(236, 72, 153, 0.2)',
-                    borderRadius: '16px',
-                    padding: '20px',
-                    marginBottom: '24px'
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    marginBottom: '20px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
-                        borderRadius: '12px',
+                        width: '32px',
+                        height: '32px',
+                        background: '#ec4899',
+                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#fff',
-                        fontSize: '18px'
+                        fontSize: '16px'
                       }}>
                         {user?.role === 'admin' ? '👑' : '👤'}
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600' }}>
                           Vai trò
                         </div>
                         <div style={{ fontSize: '16px', fontWeight: '700', color: '#1f2937' }}>
@@ -823,74 +949,52 @@ function App() {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Action Buttons - Đơn giản */}
                 <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(2, 1fr)', 
-                  gap: '12px',
-                  marginBottom: '16px'
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  gap: '12px'
                 }}>
                   <button 
                     onClick={() => setEditProfile(true)} 
-                    title="Chỉnh sửa thông tin"
                     style={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                      background: '#667eea', 
                       color: '#fff', 
                       border: 'none', 
-                      borderRadius: '16px', 
-                      padding: '16px', 
+                      borderRadius: '8px', 
+                      padding: '12px 16px', 
                       fontWeight: '600', 
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      fontSize: '16px',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)'
-                      e.target.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.4)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)'
-                      e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)'
+                      fontSize: '14px'
                     }}
                   >
-                    ✏️
+                    ✏️ Chỉnh sửa thông tin
                   </button>
                   
                   <button 
                     onClick={() => setShowChangePw(true)} 
-                    title="Đổi mật khẩu"
                     style={{ 
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                      background: '#10b981', 
                       color: '#fff', 
                       border: 'none', 
-                      borderRadius: '16px', 
-                      padding: '16px', 
+                      borderRadius: '8px', 
+                      padding: '12px 16px', 
                       fontWeight: '600', 
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      fontSize: '16px',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)'
-                      e.target.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.4)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)'
-                      e.target.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)'
+                      fontSize: '14px'
                     }}
                   >
-                    🔐
+                    🔐 Đổi mật khẩu
                   </button>
+
                 </div>
 
                 <div style={{ 
@@ -972,11 +1076,13 @@ function App() {
                   gridTemplateColumns: 'repeat(2, 1fr)', 
                   gap: '12px'
                 }}>
+
                   <button 
                     onClick={() => { 
                       localStorage.removeItem('token'); 
                       setUser(null); 
                       setShowProfile(false);
+
                       
                       // Nếu đang ở trang ViewOrder, VNPay hoặc OrderHistory, đưa về trang chủ
                       if (showViewOrder || showVNPay || showOrderHistory) {
@@ -993,87 +1099,45 @@ function App() {
                       }
                       
                       // Giữ nguyên cart khi logout
+
                       if (cart.length > 0) {
                         alert(`Đã đăng xuất thành công!\n\nGiỏ hàng của bạn (${cart.length} sản phẩm) vẫn được lưu.\n\nLưu ý: Bạn cần đăng nhập lại để có thể mua sắm và thanh toán.`)
                       }
                     }} 
-                    title="Đăng xuất"
                     style={{ 
-                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+                      background: '#ef4444', 
                       color: '#fff', 
                       border: 'none', 
-                      borderRadius: '16px', 
-                      padding: '16px', 
+                      borderRadius: '8px', 
+                      padding: '12px 16px', 
                       fontWeight: '600', 
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      fontSize: '16px',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(239, 68, 68, 0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)'
-                      e.target.style.boxShadow = '0 8px 25px rgba(239, 68, 68, 0.4)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)'
-                      e.target.style.boxShadow = '0 4px 15px rgba(239, 68, 68, 0.3)'
+                      fontSize: '14px'
                     }}
                   >
-                    🚪
-                  </button>
-                  
-                  <button 
-                    onClick={() => setShowProfile(false)} 
-                    title="Đóng"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', 
-                      color: '#fff', 
-                      border: 'none', 
-                      borderRadius: '16px', 
-                      padding: '16px', 
-                      fontWeight: '600', 
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      fontSize: '16px',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)'
-                      e.target.style.boxShadow = '0 8px 25px rgba(107, 114, 128, 0.4)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)'
-                      e.target.style.boxShadow = '0 4px 15px rgba(107, 114, 128, 0.3)'
-                    }}
-                  >
-                    ✕
+                    🚪 Đăng xuất
                   </button>
                 </div>
               </>
             ) : (
               <>
-                {/* Edit Form Header */}
+                {/* Edit Form Header - Đơn giản */}
                 <div style={{
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  padding: '20px 24px',
-                  borderRadius: '16px',
+                  background: '#10b981',
+                  padding: '16px',
+                  borderRadius: '8px',
                   textAlign: 'center',
-                  marginBottom: '24px'
+                  marginBottom: '20px'
                 }}>
                   <h3 style={{ 
                     margin: 0, 
                     color: '#fff', 
-                    fontSize: '20px',
-                    fontWeight: '700',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    fontSize: '18px',
+                    fontWeight: '700'
                   }}>
                     ✏️ Chỉnh sửa thông tin
                   </h3>
@@ -1084,10 +1148,19 @@ function App() {
                   try {
                     const token = localStorage.getItem('token')
                     if (!token) throw new Error('Bạn chưa đăng nhập')
+                    
+                    // Lấy giá trị từ refs thay vì editData
+                    const formData = {
+                      username: usernameRef.current?.value || '',
+                      email: emailRef.current?.value || '',
+                      address: addressRef.current?.value || '',
+                      phone: phoneRef.current?.value || ''
+                    }
+                    
                     const res = await fetch(`${API_BASE}/api/auth/me`, {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-                      body: JSON.stringify(editData)
+                      body: JSON.stringify(formData)
                     })
                     const data = await res.json()
                     if (!res.ok) throw new Error(data.error || 'Cập nhật thất bại')
@@ -1097,72 +1170,101 @@ function App() {
                     alert(err.message)
                   }
                 }}>
-                  <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '16px' }}>
                     <label style={{ 
                       display: 'block', 
                       fontSize: '14px', 
                       fontWeight: '600', 
                       color: '#374151', 
-                      marginBottom: '8px' 
+                      marginBottom: '6px' 
                     }}>
                       👤 Tên đăng nhập
                     </label>
                     <input 
+                      ref={usernameRef}
                       type="text" 
                       placeholder="Nhập tên đăng nhập" 
-                      value={editData.username} 
-                      onChange={e => setEditData({...editData, username: e.target.value})} 
+                      defaultValue={editData.username} 
                       style={{ 
                         width: '100%', 
-                        padding: '12px 16px', 
-                        borderRadius: '12px', 
-                        border: '2px solid #e5e7eb',
-                        fontSize: '16px',
-                        transition: 'all 0.3s ease',
-                        outline: 'none'
+                        padding: '10px 12px', 
+                        borderRadius: '8px', 
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.3s ease'
                       }}
                       onFocus={(e) => {
                         e.target.style.borderColor = '#667eea'
-                        e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
                       }}
                       onBlur={(e) => {
-                        e.target.style.borderColor = '#e5e7eb'
-                        e.target.style.boxShadow = 'none'
+                        e.target.style.borderColor = '#d1d5db'
                       }}
                     />
                   </div>
 
-                  <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '16px' }}>
                     <label style={{ 
                       display: 'block', 
                       fontSize: '14px', 
                       fontWeight: '600', 
                       color: '#374151', 
-                      marginBottom: '8px' 
+                      marginBottom: '6px' 
                     }}>
                       📧 Email
                     </label>
                     <input 
+                      ref={emailRef}
                       type="email" 
                       placeholder="Nhập email" 
-                      value={editData.email} 
-                      onChange={e => setEditData({...editData, email: e.target.value})} 
+                      defaultValue={editData.email} 
                       style={{ 
                         width: '100%', 
-                        padding: '12px 16px', 
-                        borderRadius: '12px', 
-                        border: '2px solid #e5e7eb',
-                        fontSize: '16px',
-                        transition: 'all 0.3s ease',
-                        outline: 'none'
+                        padding: '10px 12px', 
+                        borderRadius: '8px', 
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.3s ease'
                       }}
                       onFocus={(e) => {
                         e.target.style.borderColor = '#667eea'
-                        e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
                       }}
                       onBlur={(e) => {
-                        e.target.style.borderColor = '#e5e7eb'
-                        e.target.style.boxShadow = 'none'
+                        e.target.style.borderColor = '#d1d5db'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      fontSize: '14px', 
+                      fontWeight: '600', 
+                      color: '#374151', 
+                      marginBottom: '6px' 
+                    }}>
+                      📍 Địa chỉ
+                    </label>
+                    <input 
+                      ref={addressRef}
+                      type="text" 
+                      placeholder="Nhập địa chỉ" 
+                      defaultValue={editData.address} 
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px 12px', 
+                        borderRadius: '8px', 
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.3s ease'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#667eea'
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d1d5db'
                       }}
                     />
                   </div>
@@ -1173,96 +1275,49 @@ function App() {
                       fontSize: '14px', 
                       fontWeight: '600', 
                       color: '#374151', 
-                      marginBottom: '8px' 
-                    }}>
-                      📍 Địa chỉ
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder="Nhập địa chỉ" 
-                      value={editData.address} 
-                      onChange={e => setEditData({...editData, address: e.target.value})} 
-                      style={{ 
-                        width: '100%', 
-                        padding: '12px 16px', 
-                        borderRadius: '12px', 
-                        border: '2px solid #e5e7eb',
-                        fontSize: '16px',
-                        transition: 'all 0.3s ease',
-                        outline: 'none'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#667eea'
-                        e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#e5e7eb'
-                        e.target.style.boxShadow = 'none'
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={{ 
-                      display: 'block', 
-                      fontSize: '14px', 
-                      fontWeight: '600', 
-                      color: '#374151', 
-                      marginBottom: '8px' 
+                      marginBottom: '6px' 
                     }}>
                       📱 Số điện thoại
                     </label>
                     <input 
+                      ref={phoneRef}
                       type="text" 
                       placeholder="Nhập số điện thoại" 
-                      value={editData.phone} 
-                      onChange={e => setEditData({...editData, phone: e.target.value})} 
+                      defaultValue={editData.phone} 
                       style={{ 
                         width: '100%', 
-                        padding: '12px 16px', 
-                        borderRadius: '12px', 
-                        border: '2px solid #e5e7eb',
-                        fontSize: '16px',
-                        transition: 'all 0.3s ease',
-                        outline: 'none'
+                        padding: '10px 12px', 
+                        borderRadius: '8px', 
+                        border: '1px solid #d1d5db',
+                        fontSize: '14px',
+                        outline: 'none',
+                        transition: 'border-color 0.3s ease'
                       }}
                       onFocus={(e) => {
                         e.target.style.borderColor = '#667eea'
-                        e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
                       }}
                       onBlur={(e) => {
-                        e.target.style.borderColor = '#e5e7eb'
-                        e.target.style.boxShadow = 'none'
+                        e.target.style.borderColor = '#d1d5db'
                       }}
                     />
                   </div>
 
                   <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    display: 'flex', 
                     gap: '12px' 
                   }}>
                     <button 
                       type="submit" 
                       style={{ 
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                        background: '#10b981', 
                         color: '#fff', 
                         border: 'none', 
-                        borderRadius: '16px', 
-                        padding: '14px 20px', 
-                        fontWeight: '700',
-                        fontSize: '16px',
+                        borderRadius: '8px', 
+                        padding: '10px 16px', 
+                        fontWeight: '600',
+                        fontSize: '14px',
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-2px)'
-                        e.target.style.boxShadow = '0 8px 25px rgba(16, 185, 129, 0.4)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)'
-                        e.target.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)'
+                        flex: 1
                       }}
                     >
                       💾 Lưu
@@ -1272,24 +1327,15 @@ function App() {
                       type="button" 
                       onClick={() => setEditProfile(false)} 
                       style={{ 
-                        background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)', 
+                        background: '#6b7280', 
                         color: '#fff', 
                         border: 'none', 
-                        borderRadius: '16px', 
-                        padding: '14px 20px', 
-                        fontWeight: '700',
-                        fontSize: '16px',
+                        borderRadius: '8px', 
+                        padding: '10px 16px', 
+                        fontWeight: '600',
+                        fontSize: '14px',
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.transform = 'translateY(-2px)'
-                        e.target.style.boxShadow = '0 8px 25px rgba(107, 114, 128, 0.4)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.transform = 'translateY(0)'
-                        e.target.style.boxShadow = '0 4px 15px rgba(107, 114, 128, 0.3)'
+                        flex: 1
                       }}
                     >
                       ❌ Hủy
@@ -1306,7 +1352,7 @@ function App() {
 
   // Nếu user là admin
   if (user && user.role === 'admin') {
-    return <AdminDashboard onLogout={() => {
+    return <AdminDashboard user={user} onLogout={() => {
       localStorage.removeItem('token');
       setUser(null);
       setShowHomepage(false);

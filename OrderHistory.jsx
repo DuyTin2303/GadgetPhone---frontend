@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReviewButton from './ReviewButton';
 
 const OrderHistory = ({ user, onBack }) => {
   const [orders, setOrders] = useState([]);
@@ -319,6 +320,13 @@ const OrderHistory = ({ user, onBack }) => {
                       <span style={styles.itemQuantity}>Số lượng: {item.quantity}</span>
                       <span style={styles.itemPrice}>{formatCurrency(item.price)}</span>
                     </div>
+                    <ReviewButton 
+                      product={item.product} 
+                      orderStatus={selectedOrder.status}
+                      onReviewSubmitted={() => {
+                        // Có thể thêm logic refresh data nếu cần
+                      }}
+                    />
                   </div>
                 </div>
               ))}

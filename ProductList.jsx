@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-function ProductList({ search, onViewDetail }) {
+function ProductList({ search, onViewDetail, user }) {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -84,32 +84,28 @@ function ProductList({ search, onViewDetail }) {
         </p>
       </div>
 
-      {/* Filter Section */}
+
+      {/* Filter Section - Đơn giản */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',
         marginBottom: '24px',
-        gap: '16px',
+        gap: '12px',
         flexWrap: 'wrap'
       }}>
         <div style={{
-          background: 'rgba(255,255,255,0.95)',
-          borderRadius: '16px',
-          padding: '12px 20px',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(255,255,255,0.2)',
-          backdropFilter: 'blur(10px)',
+          background: '#fff',
+          borderRadius: '12px',
+          padding: '12px 16px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px'
+          gap: '10px'
         }}>
           <span style={{
             fontSize: '14px',
             fontWeight: '600',
-            color: '#374151',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
+            color: '#374151'
           }}>
             🏷️ Danh mục:
           </span>
@@ -117,25 +113,15 @@ function ProductList({ search, onViewDetail }) {
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             style={{
-              padding: '8px 16px',
-              borderRadius: '12px',
-              border: '2px solid #e5e7eb',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              border: '1px solid #d1d5db',
               background: '#fff',
               fontSize: '14px',
-              fontWeight: '500',
               color: '#374151',
               cursor: 'pointer',
               outline: 'none',
-              transition: 'all 0.3s ease',
-              minWidth: '180px'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#667eea'
-              e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)'
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#e5e7eb'
-              e.target.style.boxShadow = 'none'
+              minWidth: '160px'
             }}
           >
             <option value="">Tất cả danh mục</option>
@@ -151,27 +137,17 @@ function ProductList({ search, onViewDetail }) {
           <button
             onClick={() => setSelectedCategory('')}
             style={{
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              background: '#ef4444',
               color: '#fff',
               border: 'none',
-              borderRadius: '12px',
-              padding: '8px 16px',
+              borderRadius: '8px',
+              padding: '6px 12px',
               fontSize: '14px',
               fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-1px)'
-              e.target.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)'
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)'
-              e.target.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.3)'
+              gap: '4px'
             }}
           >
             ✕ Xóa bộ lọc
@@ -187,116 +163,76 @@ function ProductList({ search, onViewDetail }) {
       }}>
         {filtered.map(p => (
           <div key={p._id} style={{
-            background: 'rgba(255,255,255,0.95)',
-            borderRadius: '16px',
+            background: '#fff',
+            borderRadius: '12px',
             padding: '16px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             transition: 'all 0.3s ease',
             cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.2)',
-            backdropFilter: 'blur(10px)',
-            position: 'relative',
-            overflow: 'hidden'
+            border: '1px solid #e5e7eb'
           }}
             onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px) scale(1.01)'
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.12)'
-              e.currentTarget.style.background = 'rgba(255,255,255,1)'
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0) scale(1)'
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'
-              e.currentTarget.style.background = 'rgba(255,255,255,0.95)'
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
             }}
           >
-            {/* Gradient overlay */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: '20px 20px 0 0'
-            }}></div>
-            {/* Hình ảnh sản phẩm */}
-            <div style={{ marginBottom: '12px', textAlign: 'center', position: 'relative' }}>
+            {/* Hình ảnh sản phẩm - Đơn giản */}
+            <div style={{ marginBottom: '12px', textAlign: 'center' }}>
               {p.image ? (
-                <div style={{
-                  position: 'relative',
-                  overflow: 'hidden',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                  padding: '8px'
-                }}>
-                  <img
-                    src={buildImageUrl(p.image)}
-                    alt={p.name}
-                    style={{
-                      width: '100%',
-                      height: '160px',
-                      objectFit: 'cover',
-                      borderRadius: '8px',
-                      transition: 'transform 0.3s ease'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.transform = 'scale(1.05)'
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.transform = 'scale(1)'
-                    }}
-                  />
-                </div>
+                <img
+                  src={buildImageUrl(p.image)}
+                  alt={p.name}
+                  style={{
+                    width: '100%',
+                    height: '160px',
+                    objectFit: 'cover',
+                    borderRadius: '8px'
+                  }}
+                />
               ) : (
                 <div style={{
                   width: '100%',
                   height: '160px',
-                  background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                  borderRadius: '12px',
+                  background: '#f3f4f6',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#6b7280',
-                  fontSize: '14px',
-                  fontWeight: '500'
+                  fontSize: '14px'
                 }}>
                   📱 Không có hình ảnh
                 </div>
               )}
             </div>
 
-            {/* Thông tin sản phẩm */}
+            {/* Thông tin sản phẩm - Đơn giản */}
             <div>
               <h3 style={{
                 fontSize: '16px',
                 fontWeight: '700',
                 color: '#1f2937',
                 marginBottom: '8px',
-                lineHeight: '1.3',
-                height: '2.6em',
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical'
+                lineHeight: '1.3'
               }}>
                 {p.name}
               </h3>
 
               {/* Category Badge */}
               {p.category && (
-                <div style={{
-                  marginBottom: '8px'
-                }}>
+                <div style={{ marginBottom: '8px' }}>
                   <span style={{
                     display: 'inline-block',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
                     fontSize: '11px',
                     fontWeight: '600',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    background: '#667eea',
+                    color: '#fff'
                   }}>
                     {p.category.name || p.category}
                   </span>
@@ -304,15 +240,41 @@ function ProductList({ search, onViewDetail }) {
               )}
 
               <div style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                fontWeight: '800',
+                color: '#667eea',
+                fontWeight: '700',
                 fontSize: '18px',
                 marginBottom: '8px'
               }}>
                 {p.price.toLocaleString()}₫
+              </div>
+
+              {/* Rating và số lượng review */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '8px'
+              }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      style={{
+                        fontSize: '14px',
+                        color: star <= (p.averageRating || 0) ? '#ffc107' : '#e0e0e0'
+                      }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span style={{
+                  fontSize: '12px',
+                  color: '#666',
+                  fontWeight: '500'
+                }}>
+                  {p.averageRating ? p.averageRating.toFixed(1) : '0.0'} ({p.totalReviews || 0})
+                </span>
               </div>
 
               {p.description && (
@@ -320,12 +282,7 @@ function ProductList({ search, onViewDetail }) {
                   color: '#6b7280',
                   fontSize: '12px',
                   marginBottom: '10px',
-                  height: '2.4em',
-                  overflow: 'hidden',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  lineHeight: '1.2'
+                  lineHeight: '1.4'
                 }}>
                   {p.description}
                 </p>
@@ -338,56 +295,37 @@ function ProductList({ search, onViewDetail }) {
                 marginBottom: '12px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '6px 10px',
-                background: p.quantity > 0 ? 'rgba(5, 150, 105, 0.1)' : 'rgba(220, 38, 38, 0.1)',
-                borderRadius: '8px',
-                border: `1px solid ${p.quantity > 0 ? 'rgba(5, 150, 105, 0.2)' : 'rgba(220, 38, 38, 0.2)'}`
+                gap: '4px'
               }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
+                <span style={{
+                  width: '6px',
+                  height: '6px',
                   borderRadius: '50%',
                   background: p.quantity > 0 ? '#10b981' : '#ef4444'
-                }}></div>
+                }}></span>
                 {p.quantity > 0 ? `Còn ${p.quantity}` : 'Hết hàng'}
               </div>
 
-              {/* Nút xem chi tiết */}
+              {/* Nút xem chi tiết - Đơn giản */}
               <button
                 onClick={() => onViewDetail && onViewDetail(p._id)}
                 style={{
                   width: '100%',
                   padding: '10px 16px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: '#667eea',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '700',
+                  fontWeight: '600',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.3px'
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.transform = 'translateY(-1px)'
-                  e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)'
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.transform = 'translateY(0)'
-                  e.target.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)'
+                  gap: '6px'
                 }}
               >
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" fill="currentColor"/>
-                </svg>
-                Xem Chi Tiết
+                👁️ Xem Chi Tiết
               </button>
             </div>
           </div>

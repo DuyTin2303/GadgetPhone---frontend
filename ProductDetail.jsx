@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import ReviewSection from './ReviewSection'
 
 function ProductDetail({ productId, onBack, onAddToCart, user }) {
   const [product, setProduct] = useState(null)
@@ -242,9 +243,38 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
             fontSize: '32px', 
             fontWeight: '700', 
             color: '#d32f2f',
-            marginBottom: '24px'
+            marginBottom: '16px'
           }}>
             {product.price.toLocaleString()}₫
+          </div>
+
+          {/* Rating và số lượng review */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '24px'
+          }}>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  style={{
+                    fontSize: '20px',
+                    color: star <= (product.averageRating || 0) ? '#ffc107' : '#e0e0e0'
+                  }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <span style={{
+              fontSize: '16px',
+              color: '#666',
+              fontWeight: '500'
+            }}>
+              {product.averageRating ? product.averageRating.toFixed(1) : '0.0'} ({product.totalReviews || 0} đánh giá)
+            </span>
           </div>
 
           {/* Mô tả sản phẩm */}
@@ -292,6 +322,7 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
             </div>
           </div>
 
+
           {/* Nút thêm vào giỏ hàng */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <button 
@@ -305,11 +336,11 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
               disabled={product.quantity === 0}
               style={{
                 padding: '12px 24px',
-                background: product.quantity > 0 ? '#1976d2' : '#ccc',
+                background: (product.quantity > 0 && user) ? '#1976d2' : '#ccc',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
-                cursor: product.quantity > 0 ? 'pointer' : 'not-allowed',
+                cursor: (product.quantity > 0 && user) ? 'pointer' : 'not-allowed',
                 fontSize: '16px',
                 fontWeight: '600',
                 display: 'flex',
@@ -318,12 +349,12 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
                 transition: 'all 0.2s'
               }}
               onMouseOver={(e) => {
-                if (product.quantity > 0) {
+                if (product.quantity > 0 && user) {
                   e.target.style.background = '#1565c0'
                 }
               }}
               onMouseOut={(e) => {
-                if (product.quantity > 0) {
+                if (product.quantity > 0 && user) {
                   e.target.style.background = '#1976d2'
                 }
               }}
@@ -331,7 +362,7 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                 <path d="M7 20c.828 0 1.5-.672 1.5-1.5S7.828 17 7 17s-1.5.672-1.5 1.5S6.172 20 7 20Zm10 0c.828 0 1.5-.672 1.5-1.5S17.828 17 17 17s-1.5.672-1.5 1.5S16.172 20 17 20ZM7.2 15h9.45c.7 0 1.3-.46 1.46-1.13l1.7-7.03A1 1 0 0 0 18.85 6H6.16l-.31-1.36A1 1 0 0 0 4.88 4H2.75a.75.75 0 0 0 0 1.5h1.55l2.03 8.93c-.62.36-1.03 1.04-1.03 1.82C5.3 17.16 6.14 18 7.2 18h9.6a.75.75 0 0 0 0-1.5H7.2a.3.3 0 0 1-.3-.3c0-.17.13-.3.3-.3Zm10.24-7-1.5 6.22a.25.25 0 0 1-.24.18H7.53l-1.5-6.4h11.41Z" fill="currentColor"/>
               </svg>
-              {product.quantity > 0 ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+              {!user ? 'Cần đăng nhập' : (product.quantity > 0 ? 'Thêm vào giỏ hàng' : 'Hết hàng')}
             </button>
 
             <button 
@@ -386,6 +417,9 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
           </div>
         </div>
       </div>
+
+      {/* Phần đánh giá */}
+      <ReviewSection productId={productId} user={user} />
 
       {/* CSS cho animation loading */}
       <style>{`
