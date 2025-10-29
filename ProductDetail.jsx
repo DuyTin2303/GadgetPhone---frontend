@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import ReviewSection from './ReviewSection'
 
 function ProductDetail({ productId, onBack, onAddToCart, user }) {
   const [product, setProduct] = useState(null)
@@ -242,9 +243,38 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
             fontSize: '32px', 
             fontWeight: '700', 
             color: '#d32f2f',
-            marginBottom: '24px'
+            marginBottom: '16px'
           }}>
             {product.price.toLocaleString()}₫
+          </div>
+
+          {/* Rating và số lượng review */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '24px'
+          }}>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  style={{
+                    fontSize: '20px',
+                    color: star <= (product.averageRating || 0) ? '#ffc107' : '#e0e0e0'
+                  }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <span style={{
+              fontSize: '16px',
+              color: '#666',
+              fontWeight: '500'
+            }}>
+              {product.averageRating ? product.averageRating.toFixed(1) : '0.0'} ({product.totalReviews || 0} đánh giá)
+            </span>
           </div>
 
           {/* Mô tả sản phẩm */}
@@ -387,6 +417,9 @@ function ProductDetail({ productId, onBack, onAddToCart, user }) {
           </div>
         </div>
       </div>
+
+      {/* Phần đánh giá */}
+      <ReviewSection productId={productId} user={user} />
 
       {/* CSS cho animation loading */}
       <style>{`

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import RevenueBarChart from './RevenueBarChart';
 import AdminOrderManagement from './AdminOrderManagement';
-import AdminStats from './AdminStats';
+
 
 const menuItems = [
   { key: 'products', label: 'Quản lý sản phẩm' },
@@ -9,15 +9,13 @@ const menuItems = [
   { key: 'users', label: 'Quản lý người dùng' },
   { key: 'orders', label: 'Quản lý đơn hàng' },
 
-  { key: 'stats', label: 'Thống kê hệ thống' },
-
   { key: 'notifications', label: '🔔 Quản lý thông báo' },
 
   { key: 'revenue', label: 'Thống kê doanh thu' },
   { key: 'logout', label: 'Đăng xuất' }
 ];
 
-function AdminDashboard({ onLogout }) {
+function AdminDashboard({ onLogout, user }) {
   const [active, setActive] = useState('products');
   const [products, setProducts] = useState([]);
   
@@ -2111,6 +2109,9 @@ function AdminDashboard({ onLogout }) {
 
       case 'orders':
         return <AdminOrderManagement />;
+
+      case 'reviews':
+        return <AdminReviewManagement user={user} />;
 
       case 'notifications':
         return (
