@@ -1352,7 +1352,7 @@ function App() {
 
   // Nếu user là admin
   if (user && user.role === 'admin') {
-    return <AdminDashboard onLogout={() => {
+    return <AdminDashboard user={user} onLogout={() => {
       localStorage.removeItem('token');
       setUser(null);
       setShowHomepage(false);

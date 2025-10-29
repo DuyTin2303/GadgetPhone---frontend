@@ -248,6 +248,35 @@ function ProductList({ search, onViewDetail, user }) {
                 {p.price.toLocaleString()}₫
               </div>
 
+              {/* Rating và số lượng review */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '8px'
+              }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      style={{
+                        fontSize: '14px',
+                        color: star <= (p.averageRating || 0) ? '#ffc107' : '#e0e0e0'
+                      }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span style={{
+                  fontSize: '12px',
+                  color: '#666',
+                  fontWeight: '500'
+                }}>
+                  {p.averageRating ? p.averageRating.toFixed(1) : '0.0'} ({p.totalReviews || 0})
+                </span>
+              </div>
+
               {p.description && (
                 <p style={{
                   color: '#6b7280',

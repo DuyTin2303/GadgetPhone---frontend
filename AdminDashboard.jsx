@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import RevenueBarChart from './RevenueBarChart';
 import AdminOrderManagement from './AdminOrderManagement';
+import AdminReviewManagement from './AdminReviewManagement';
 
 const menuItems = [
   { key: 'products', label: 'Quản lý sản phẩm' },
   { key: 'categories', label: 'Quản lý danh mục' },
   { key: 'users', label: 'Quản lý người dùng' },
   { key: 'orders', label: 'Quản lý đơn hàng' },
+  { key: 'reviews', label: '⭐ Quản lý đánh giá' },
   { key: 'notifications', label: '🔔 Quản lý thông báo' },
   { key: 'revenue', label: 'Thống kê doanh thu' },
   { key: 'logout', label: 'Đăng xuất' }
 ];
 
-function AdminDashboard({ onLogout }) {
+function AdminDashboard({ onLogout, user }) {
   const [active, setActive] = useState('products');
   const [products, setProducts] = useState([]);
   
@@ -2106,6 +2108,9 @@ function AdminDashboard({ onLogout }) {
 
       case 'orders':
         return <AdminOrderManagement />;
+
+      case 'reviews':
+        return <AdminReviewManagement user={user} />;
 
       case 'notifications':
         return (
